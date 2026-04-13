@@ -155,9 +155,11 @@ function generatePDF(stats, vehicle) {
         tr:last-child td { border-bottom: none; }
         .footer { margin-top: 32px; font-size: 10px; color: #aaa; text-align: center; border-top: 1px solid #eee; padding-top: 12px; }
         @media print {
+          @page { size: portrait; margin: 16px; }
           body { padding: 16px; }
           .page-break { page-break-before: always; }
         }
+
       </style>
     </head>
     <body>
@@ -248,7 +250,7 @@ export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }
   const [error, setError] = useState(null);
 
   console.log('StatsPage render, selectedVehicle:', selectedVehicle?.id);
-  
+
   useEffect(() => {
     if (!selectedVehicle) return;
     setLoading(true);

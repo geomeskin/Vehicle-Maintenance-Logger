@@ -1,0 +1,33 @@
+# environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+.env.*.local
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+.output/
+
+# Vercel
+.vercel/
+
+# Vite
+*.local
+vite.config.js.timestamp-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+*.swp

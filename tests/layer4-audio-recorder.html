@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Audio Recorder Test — Layer 4</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #222;
+      font-size: 14px;
+    }
+
+    .info-row:last-child { border-bottom: none; }
+
+    .info-row .label { color: #888; }
+    .info-row .value {
+      font-weight: 500;
+      color: #fff;
+      max-width: 200px;
+      text-align: right;
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+    .value.pass { color: #4ade80; }
+    .value.fail { color: #f87171; }
+    .value.warn { color: #fbbf24; }
+
+    .record-btn {
+      width: 100%;
+      height: 72px;
+      border-radius: 12px;
+      border: none;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #2563eb;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .record-btn:active { transform: scale(0.97); }
+    .record-btn.recording { background: #dc2626; }
+    .record-btn.processing { background: #7c3aed; }
+    .record-btn:disabled { background: #333; color: #666; cursor: default; }
+
+    .timer {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      margin: 8px 0 16px;
+      letter-spacing: 0.05em;
+    }
+
+    .timer.hidden { display: none; }
+
+    audio {
+      width: 100%;
+      margin-top: 8px;
+      border-radius: 8px;
+    }
+
+    .test-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #222;
+      font-size: 14px;
+    }
+
+    .test-row:last-child { border-bottom: none; }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot.pass { background: #4ade80; }
+    .dot.fail { background: #f87171; }
+    .dot.pending { background: #444; }
+
+    .log {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      color: #6ee7b7;
+      background: #0d1a13;
+      border: 1px solid #1a3a28;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.8;
+    }
+
+    .log .err { color: #f87171; }
+    .log .warn { color: #fbbf24; }
+    .log .info { color: #93c5fd; }
+  </style>
+</head>
+<body>
+
+  <h1>Layer 4 — Audio Recorder Test</h1>
+  <p class="subtitle">Open on both Android and iOS. All checks should pass.</p>
+
+  <!-- Device info -->
+  <div class="card">
+    <h2>Device info</h2>
+    <div class="info-row">
+      <span class="label">Platform</span>
+      <span class="value" id="platform">detecting...</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Browser</span>
+      <span class="value" id="browser">detecting...</span>
+    </div>
+    <div class="info-row">
+      <span class="label">MediaRecorder API</span>
+      <span class="value" id="mr-support">checking...</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Best MIME type</span>
+      <span class="value" id="mime-type">checking...</span>
+    </div>
+    <div class="info-row">
+      <span class="label">getUserMedia</span>
+      <span class="value" id="gum-support">checking...</span>
+    </div>
+  </div>
+
+  <!-- MIME type support grid -->
+  <div class="card">
+    <h2>Supported audio formats</h2>
+    <div id="format-list"></div>
+  </div>
+
+  <!-- Recorder -->
+  <div class="card">
+    <h2>Record a test clip</h2>
+    <div class="timer hidden" id="timer">0:00</div>
+    <button class="record-btn" id="record-btn" onclick="handleRecordButton()">
+      Tap to Record
+    </button>
+    <div id="playback-section" style="display:none">
+      <audio id="playback" controls></audio>
+      <div style="margin-top:12px">
+        <div class="info-row">
+          <span class="label">Blob size</span>
+          <span class="value" id="blob-size">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Blob type</span>
+          <span class="value" id="blob-type">—</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Duration</span>
+          <span class="value" id="rec-duration">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist -->
+  <div class="card">
+    <h2>Test checklist</h2>
+    <div id="checklist"></div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>Event log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+<script>
+  // ── Utils ────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  let logLines = [];
+
+  function log(msg, type = '') {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    logLines.push(`<span class="${type}">[${time}] ${msg}</span>`);
+    $('log').innerHTML = logLines.join('\n');
+    $('log').scrollTop = $('log').scrollHeight;
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  // ── Checklist ─────────────────────────────────────────────────────────────
+  const checks = {
+    mediaRecorderExists: { label: 'MediaRecorder API exists', status: 'pending' },
+    mimeTypeFound: { label: 'Compatible MIME type found', status: 'pending' },
+    micPermission: { label: 'Microphone permission granted', status: 'pending' },
+    recordingStarted: { label: 'Recording started successfully', status: 'pending' },
+    blobCreated: { label: 'Audio blob created on stop', status: 'pending' },
+    blobNonEmpty: { label: 'Blob is non-empty (> 1KB)', status: 'pending' },
+    playbackWorks: { label: 'Playback works in browser', status: 'pending' },
+  };
+
+  function renderChecklist() {
+    $('checklist').innerHTML = Object.entries(checks).map(([, c]) =>
+      `<div class="test-row">
+        <div class="dot ${c.status}"></div>
+        <span>${c.label}</span>
+      </div>`
+    ).join('');
+  }
+
+  function setCheck(key, pass, note) {
+    checks[key].status = pass ? 'pass' : 'fail';
+    if (note) checks[key].label += ` — ${note}`;
+    renderChecklist();
+  }
+
+  // ── MIME type detection (same logic as useVoiceRecorder.js) ───────────────
+  function getSupportedMimeType() {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+    ];
+    for (const type of types) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return '';
+  }
+
+  // ── Device detection ──────────────────────────────────────────────────────
+  function detectPlatform() {
+    const ua = navigator.userAgent;
+    if (/iPad|iPhone|iPod/.test(ua)) return 'iOS';
+    if (/Android/.test(ua)) return 'Android';
+    if (/Mac/.test(ua)) return 'macOS';
+    if (/Win/.test(ua)) return 'Windows';
+    return 'Unknown';
+  }
+
+  function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (/CriOS/.test(ua)) return 'Chrome (iOS)';
+    if (/FxiOS/.test(ua)) return 'Firefox (iOS)';
+    if (/EdgA/.test(ua)) return 'Edge (Android)';
+    if (/Chrome/.test(ua)) return 'Chrome';
+    if (/Safari/.test(ua)) return 'Safari';
+    if (/Firefox/.test(ua)) return 'Firefox';
+    return 'Unknown';
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function init() {
+    renderChecklist();
+
+    const platform = detectPlatform();
+    const browser = detectBrowser();
+    $('platform').textContent = platform;
+    $('browser').textContent = browser;
+    log(`Platform: ${platform}, Browser: ${browser}`, 'info');
+
+    // MediaRecorder support
+    if (typeof MediaRecorder !== 'undefined') {
+      $('mr-support').textContent = 'Supported';
+      $('mr-support').className = 'value pass';
+      setCheck('mediaRecorderExists', true);
+      log('MediaRecorder: supported', 'info');
+    } else {
+      $('mr-support').textContent = 'Not supported!';
+      $('mr-support').className = 'value fail';
+      setCheck('mediaRecorderExists', false);
+      log('MediaRecorder: NOT supported — this browser cannot record audio', 'err');
+    }
+
+    // MIME type
+    const mimeType = getSupportedMimeType();
+    if (mimeType) {
+      $('mime-type').textContent = mimeType;
+      $('mime-type').className = 'value pass';
+      setCheck('mimeTypeFound', true, mimeType.split(';')[0]);
+      log(`Best MIME type: ${mimeType}`, 'info');
+    } else {
+      $('mime-type').textContent = 'Using browser default';
+      $('mime-type').className = 'value warn';
+      setCheck('mimeTypeFound', true, 'browser default');
+      log('MIME type: using browser default', 'warn');
+    }
+
+    // getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      $('gum-support').textContent = 'Available';
+      $('gum-support').className = 'value pass';
+      log('getUserMedia: available', 'info');
+    } else {
+      $('gum-support').textContent = 'Not available!';
+      $('gum-support').className = 'value fail';
+      log('getUserMedia: NOT available — microphone access impossible', 'err');
+    }
+
+    // Format grid
+    const formats = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/wav',
+    ];
+    const formatHTML = formats.map(f => {
+      const supported = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(f);
+      return `<div class="test-row">
+        <div class="dot ${supported ? 'pass' : 'fail'}"></div>
+        <span style="font-size:13px;font-family:monospace">${f}</span>
+      </div>`;
+    }).join('');
+    $('format-list').innerHTML = formatHTML;
+  }
+
+  // ── Recorder state machine ────────────────────────────────────────────────
+  let recorderState = 'idle';
+  let mediaRecorder = null;
+  let chunks = [];
+  let stream = null;
+  let timerInterval = null;
+  let startTime = null;
+
+  function updateTimer() {
+    const secs = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    $('timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  async function handleRecordButton() {
+    if (recorderState === 'idle') {
+      await startRecording();
+    } else if (recorderState === 'recording') {
+      stopRecording();
+    }
+  }
+
+  async function startRecording() {
+    log('Requesting microphone permission...');
+    $('record-btn').disabled = true;
+    $('record-btn').textContent = 'Requesting mic...';
+    $('playback-section').style.display = 'none';
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000,
+        },
+      });
+
+      setCheck('micPermission', true);
+      log('Microphone permission granted', 'info');
+
+      const mimeType = getSupportedMimeType();
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data);
+          log(`Chunk received: ${formatBytes(e.data.size)}`);
+        }
+      };
+
+      mediaRecorder.onstart = () => {
+        recorderState = 'recording';
+        setCheck('recordingStarted', true);
+        log('Recording started', 'info');
+
+        $('record-btn').textContent = 'Tap to Stop';
+        $('record-btn').className = 'record-btn recording';
+        $('record-btn').disabled = false;
+        $('timer').className = 'timer';
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 500);
+      };
+
+      mediaRecorder.onstop = () => {
+        clearInterval(timerInterval);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        const actualMime = mimeType || 'audio/webm';
+        const blob = new Blob(chunks, { type: actualMime });
+
+        log(`Recording stopped. Blob: ${formatBytes(blob.size)}, type: ${blob.type}`, 'info');
+
+        setCheck('blobCreated', true);
+        setCheck('blobNonEmpty', blob.size > 1024, `${formatBytes(blob.size)}`);
+
+        // Show playback
+        const url = URL.createObjectURL(blob);
+        $('playback').src = url;
+        $('playback-section').style.display = 'block';
+        $('blob-size').textContent = formatBytes(blob.size);
+        $('blob-type').textContent = blob.type;
+        $('rec-duration').textContent = `${duration}s`;
+
+        // Check playback after short delay
+        setTimeout(() => {
+          const audio = $('playback');
+          if (audio.readyState >= 1) {
+            setCheck('playbackWorks', true, `${duration}s clip`);
+            log('Playback ready', 'info');
+          } else {
+            setCheck('playbackWorks', false, 'audio readyState = 0');
+            log('Playback issue: readyState = 0', 'warn');
+          }
+        }, 500);
+
+        // Cleanup stream
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+
+        recorderState = 'idle';
+        $('record-btn').textContent = 'Record Again';
+        $('record-btn').className = 'record-btn';
+        $('record-btn').disabled = false;
+        $('timer').className = 'timer hidden';
+      };
+
+      mediaRecorder.onerror = (e) => {
+        log(`Recorder error: ${e.error?.message || 'unknown'}`, 'err');
+        setCheck('recordingStarted', false, e.error?.message);
+        recorderState = 'idle';
+        $('record-btn').textContent = 'Tap to Record';
+        $('record-btn').className = 'record-btn';
+        $('record-btn').disabled = false;
+      };
+
+      mediaRecorder.start(250);
+
+    } catch (err) {
+      log(`Error: ${err.name} — ${err.message}`, 'err');
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCheck('micPermission', false, 'Permission denied');
+        log('→ Go to browser Settings and allow microphone for this page', 'warn');
+      } else if (err.name === 'NotFoundError') {
+        setCheck('micPermission', false, 'No microphone found');
+      } else {
+        setCheck('micPermission', false, err.message);
+      }
+
+      recorderState = 'idle';
+      $('record-btn').textContent = 'Tap to Record';
+      $('record-btn').className = 'record-btn';
+      $('record-btn').disabled = false;
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && recorderState === 'recording') {
+      recorderState = 'processing';
+      $('record-btn').textContent = 'Processing...';
+      $('record-btn').className = 'record-btn processing';
+      $('record-btn').disabled = true;
+      mediaRecorder.stop();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -241,7 +241,10 @@ function generatePDF(stats, vehicle) {
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
-  setTimeout(() => win.print(), 500);
+  setTimeout(() => {
+    win.document.body.style.width = '8.5in';
+    win.print();
+  }, 500);
 }
 
 export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }) {

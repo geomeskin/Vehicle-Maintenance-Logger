@@ -48,11 +48,12 @@ export default function HomePage({ session }) {
     }
   }, [selectedVehicle?.id]);
 
-  useEffect(() => {
-    if (recorder.state === 'done' && recorder.audioBlob) {
-      handleAudioReady(recorder.audioBlob);
-    }
-  }, [recorder.state]);
+useEffect(() => {
+  console.log('recorder state:', recorder.state, 'blob:', recorder.audioBlob?.size);
+  if (recorder.state === 'done' && recorder.audioBlob) {
+    handleAudioReady(recorder.audioBlob);
+  }
+}, [recorder.state]);
 
 async function handleAudioReady(blob) {
     setErrorMsg(null);

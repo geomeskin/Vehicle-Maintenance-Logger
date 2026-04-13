@@ -8,10 +8,6 @@ import LogCard from '../components/LogCard';
 import EditModal from '../components/EditModal';
 import NeedsReviewBanner from '../components/NeedsReviewBanner';
 
-async function handleAudioReady(blob) {
-  console.log('handleAudioReady called, blob size:', blob?.size);
-  const vehicle = selectedVehicleRef.current;
-  
 export default function HomePage({ session }) {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -33,7 +29,13 @@ export default function HomePage({ session }) {
 
   useEffect(() => {
     fetchVehicles()
-      .then(vs => { setVehicles(vs); if (vs.length > 0) setSelectedVehicle(vs[0]); })
+      .then(vs => {
+        setVehicles(vs);
+        if (vs.length > 0) {
+          setSelectedVehicle(vs[0]);
+          selectedVehicleRef.current = vs[0];
+        }
+      })
       .catch(err => setErrorMsg(err.message));
   }, []);
 
@@ -62,13 +64,19 @@ export default function HomePage({ session }) {
   }, [selectedVehicle?.id]);
 
   async function handleAudioReady(blob) {
+    console.log('handleAudioReady called, blob size:', blob?.size);
     const vehicle = selectedVehicleRef.current;
-    if (!vehicle) return;
+    if (!vehicle) {
+      console.log('no vehicle selected');
+      return;
+    }
     setErrorMsg(null);
     setLastResult(null);
     try {
       setProcessingState('transcribing');
+      console.log('calling transcribeAudio...');
       const transcript = await transcribeAudio(blob);
+      console.log('transcript:', transcript);
       setProcessingState('parsing');
       const result = await parseLog({
         transcript,
@@ -76,6 +84,7 @@ export default function HomePage({ session }) {
         vehicleName: vehicle.name,
         currentMileage: vehicle.current_mileage,
       });
+      console.log('parse result:', result);
       setLastResult(result);
       if (result.parsed) {
         await loadLogs(vehicle, true);
@@ -87,6 +96,7 @@ export default function HomePage({ session }) {
         }
       }
     } catch (err) {
+      console.log('error:', err.message);
       setErrorMsg(err.message);
     } finally {
       setProcessingState('idle');

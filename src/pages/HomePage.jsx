@@ -8,6 +8,10 @@ import LogCard from '../components/LogCard';
 import EditModal from '../components/EditModal';
 import NeedsReviewBanner from '../components/NeedsReviewBanner';
 
+async function handleAudioReady(blob) {
+  console.log('handleAudioReady called, blob size:', blob?.size);
+  const vehicle = selectedVehicleRef.current;
+  
 export default function HomePage({ session }) {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);

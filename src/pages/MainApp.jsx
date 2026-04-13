@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { fetchVehicles } from '../api';
+import { getDefaultVehicleId } from '../components/VehiclePicker';
 import HomePage from './HomePage.jsx';
 import StatsPage from './StatsPage.jsx';
 
@@ -33,7 +35,11 @@ export default function MainApp({ session }) {
     fetchVehicles()
       .then(vs => {
         setVehicles(vs);
-        if (vs.length > 0) setSelectedVehicle(vs[0]);
+        if (vs.length > 0) {
+          const defaultId = getDefaultVehicleId();
+          const defaultVehicle = vs.find(v => v.id === defaultId) || vs[0];
+          setSelectedVehicle(defaultVehicle);
+        }
       })
       .catch(console.error);
   }, []);
@@ -41,7 +47,6 @@ export default function MainApp({ session }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
 
-      {/* Header */}
       <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: 'var(--accent)', letterSpacing: '-0.01em' }}>
           VML
@@ -57,14 +62,13 @@ export default function MainApp({ session }) {
         </button>
       </div>
 
-      {/* Page content */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <div style={{ display: tab === 'log' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <HomePage
             session={session}
             vehicles={vehicles}
             selectedVehicle={selectedVehicle}
-            onSelectVehicle={v => { setSelectedVehicle(v); }}
+            onSelectVehicle={v => setSelectedVehicle(v)}
             onVehiclesUpdated={setVehicles}
           />
         </div>
@@ -77,7 +81,6 @@ export default function MainApp({ session }) {
         </div>
       </div>
 
-      {/* Bottom tab bar */}
       <div style={{
         display: 'flex',
         borderTop: '1px solid var(--border)',

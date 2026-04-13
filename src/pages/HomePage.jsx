@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../supabase';
-import { transcribeAudio, parseLog, fetchVehicles, fetchLogs } from '../api';
+import { transcribeAudio, parseLog, fetchLogs } from '../api';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import VehiclePicker from '../components/VehiclePicker';
 import RecordButton from '../components/RecordButton';
@@ -8,9 +7,7 @@ import LogCard from '../components/LogCard';
 import EditModal from '../components/EditModal';
 import NeedsReviewBanner from '../components/NeedsReviewBanner';
 
-export default function HomePage({ session }) {
-  const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+export default function HomePage({ session, vehicles, selectedVehicle, onSelectVehicle, onVehiclesUpdated }) {
   const [logs, setLogs] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -26,18 +23,6 @@ export default function HomePage({ session }) {
   const recorder = useVoiceRecorder(useCallback((blob) => {
     if (handleAudioReadyRef.current) handleAudioReadyRef.current(blob);
   }, []));
-
-  useEffect(() => {
-    fetchVehicles()
-      .then(vs => {
-        setVehicles(vs);
-        if (vs.length > 0) {
-          setSelectedVehicle(vs[0]);
-          selectedVehicleRef.current = vs[0];
-        }
-      })
-      .catch(err => setErrorMsg(err.message));
-  }, []);
 
   const loadLogs = useCallback(async (vehicle, reset = true) => {
     if (!vehicle) return;
@@ -64,19 +49,13 @@ export default function HomePage({ session }) {
   }, [selectedVehicle?.id]);
 
   async function handleAudioReady(blob) {
-    console.log('handleAudioReady called, blob size:', blob?.size);
     const vehicle = selectedVehicleRef.current;
-    if (!vehicle) {
-      console.log('no vehicle selected');
-      return;
-    }
+    if (!vehicle) return;
     setErrorMsg(null);
     setLastResult(null);
     try {
       setProcessingState('transcribing');
-      console.log('calling transcribeAudio...');
       const transcript = await transcribeAudio(blob);
-      console.log('transcript:', transcript);
       setProcessingState('parsing');
       const result = await parseLog({
         transcript,
@@ -84,19 +63,19 @@ export default function HomePage({ session }) {
         vehicleName: vehicle.name,
         currentMileage: vehicle.current_mileage,
       });
-      console.log('parse result:', result);
       setLastResult(result);
       if (result.parsed) {
         await loadLogs(vehicle, true);
         if (result.parsed.mileage && result.parsed.mileage > (vehicle.current_mileage || 0)) {
           const updated = { ...vehicle, current_mileage: result.parsed.mileage };
-          setSelectedVehicle(updated);
+          onSelectVehicle(updated);
           selectedVehicleRef.current = updated;
-          setVehicles(prev => prev.map(v => v.id === vehicle.id ? updated : v));
+          if (onVehiclesUpdated) {
+            onVehiclesUpdated(prev => prev.map(v => v.id === vehicle.id ? updated : v));
+          }
         }
       }
     } catch (err) {
-      console.log('error:', err.message);
       setErrorMsg(err.message);
     } finally {
       setProcessingState('idle');
@@ -122,14 +101,9 @@ export default function HomePage({ session }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', maxWidth:'480px', margin:'0 auto', overflow:'hidden' }}>
 
-      <div style={{ padding:'16px 16px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-        <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'var(--accent)' }}>VML</div>
-        <button onClick={() => supabase.auth.signOut()} style={{ fontSize:'11px', color:'var(--text3)', letterSpacing:'0.05em' }}>SIGN OUT</button>
-      </div>
-
       <div style={{ padding:'14px 0', flexShrink:0 }}>
         {vehicles.length > 0
-          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); selectedVehicleRef.current = v; setLastResult(null); setLogOffset(0); }} />
+          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { onSelectVehicle(v); selectedVehicleRef.current = v; setLastResult(null); setLogOffset(0); }} />
           : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>}
       </div>
 

@@ -4,6 +4,9 @@
 .env.production
 .env.*.local
 
+# ZIP folder for downloads
+/ZIP
+
 # dependencies
 node_modules/
 

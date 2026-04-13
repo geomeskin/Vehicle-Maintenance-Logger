@@ -42,7 +42,10 @@ export default function HomePage({ session }) {
   }, [logOffset]);
 
   useEffect(() => {
-    if (selectedVehicle) { setLogOffset(0); loadLogs(selectedVehicle, true); }
+    if (selectedVehicle) {
+      setLogOffset(0);
+      loadLogs(selectedVehicle, true);
+    }
   }, [selectedVehicle?.id]);
 
   useEffect(() => {
@@ -52,7 +55,8 @@ export default function HomePage({ session }) {
   }, [recorder.state]);
 
   async function handleAudioReady(blob) {
-    setErrorMsg(null); setLastResult(null);
+    setErrorMsg(null);
+    setLastResult(null);
     try {
       setProcessingState('transcribing');
       const transcript = await transcribeAudio(blob);
@@ -64,10 +68,8 @@ export default function HomePage({ session }) {
         currentMileage: selectedVehicle.current_mileage,
       });
       setLastResult(result);
-        setLastResult(result);
-        if (result.parsed) {
-          await loadLogs(selectedVehicle, true);
-        }
+      if (result.parsed) {
+        await loadLogs(selectedVehicle, true);
         if (result.parsed.mileage && result.parsed.mileage > (selectedVehicle.current_mileage || 0)) {
           const updated = { ...selectedVehicle, current_mileage: result.parsed.mileage };
           setSelectedVehicle(updated);
@@ -94,19 +96,29 @@ export default function HomePage({ session }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', maxWidth:'480px', margin:'0 auto', overflow:'hidden' }}>
+
+      {/* Header */}
       <div style={{ padding:'16px 16px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
         <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'var(--accent)' }}>VML</div>
         <button onClick={() => supabase.auth.signOut()} style={{ fontSize:'11px', color:'var(--text3)', letterSpacing:'0.05em' }}>SIGN OUT</button>
       </div>
 
+      {/* Vehicle picker */}
       <div style={{ padding:'14px 0', flexShrink:0 }}>
         {vehicles.length > 0
-          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); setLastResult(null); }} />
+          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); setLastResult(null); setLogOffset(0); }} />
           : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>}
       </div>
 
+      {/* Record section */}
       <div style={{ padding:'8px 16px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', flexShrink:0 }}>
-        <RecordButton recorderState={uiState} duration={recorder.duration} onStart={() => { setLastResult(null); setErrorMsg(null); recorder.start(); }} onStop={() => recorder.stop()} disabled={!selectedVehicle} />
+        <RecordButton
+          recorderState={uiState}
+          duration={recorder.duration}
+          onStart={() => { setLastResult(null); setErrorMsg(null); recorder.start(); }}
+          onStop={() => recorder.stop()}
+          disabled={!selectedVehicle}
+        />
         {(errorMsg || recorder.error) && (
           <div style={{ width:'100%', padding:'10px 14px', background:'#1a0a0a', border:'1px solid var(--red)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--red)' }}>
             {errorMsg || recorder.error}
@@ -119,12 +131,14 @@ export default function HomePage({ session }) {
         )}
       </div>
 
+      {/* Needs review banner */}
       {lastResult?.needsReview && lastResult?.parsed && (
         <div style={{ flexShrink:0, marginBottom:'12px' }}>
           <NeedsReviewBanner log={{ ...lastResult.parsed, logType: lastResult.logType }} onEdit={setEditingLog} />
         </div>
       )}
 
+      {/* Log feed */}
       <div style={{ flex:1, overflowY:'auto', padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
         <div style={{ fontSize:'10px', color:'var(--text3)', letterSpacing:'0.1em', textTransform:'uppercase', paddingBottom:'4px', borderBottom:'1px solid var(--border)', marginBottom:'4px', flexShrink:0 }}>
           Log History
@@ -145,6 +159,7 @@ export default function HomePage({ session }) {
         )}
       </div>
 
+      {/* Edit modal */}
       {editingLog && <EditModal log={editingLog} onClose={() => setEditingLog(null)} onSaved={handleLogEdited} />}
     </div>
   );

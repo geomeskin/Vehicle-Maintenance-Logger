@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import { transcribeAudio, parseLog, fetchVehicles, fetchLogs } from '../api';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
@@ -19,6 +19,7 @@ export default function HomePage({ session }) {
   const [processingState, setProcessingState] = useState('idle');
   const [errorMsg, setErrorMsg] = useState(null);
   const [logOffset, setLogOffset] = useState(0);
+  const pendingBlob = useRef(null);
 
   const recorder = useVoiceRecorder();
 
@@ -37,8 +38,11 @@ export default function HomePage({ session }) {
       setLogs(prev => reset ? result.logs : [...prev, ...result.logs]);
       setHasMore(result.hasMore);
       setLogOffset(off + result.logs.length);
-    } catch (err) { setErrorMsg(err.message); }
-    finally { setLoadingLogs(false); }
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoadingLogs(false);
+    }
   }, [logOffset]);
 
   useEffect(() => {
@@ -48,15 +52,14 @@ export default function HomePage({ session }) {
     }
   }, [selectedVehicle?.id]);
 
-useEffect(() => {
-  if (recorder.state === 'done' && recorder.audioBlob) {
-    const blob = recorder.audioBlob;
-    handleAudioReady(blob);
-  }
-}, [recorder.audioBlob]);
+  useEffect(() => {
+    if (recorder.state === 'done' && recorder.audioBlob && !pendingBlob.current) {
+      pendingBlob.current = recorder.audioBlob;
+      handleAudioReady(recorder.audioBlob);
+    }
+  }, [recorder.state, recorder.audioBlob]);
 
-
-async function handleAudioReady(blob) {
+  async function handleAudioReady(blob) {
     setErrorMsg(null);
     setLastResult(null);
     try {
@@ -82,9 +85,11 @@ async function handleAudioReady(blob) {
       setErrorMsg(err.message);
     } finally {
       setProcessingState('idle');
+      pendingBlob.current = null;
       recorder.reset();
     }
   }
+
   function getRecorderState() {
     if (processingState === 'transcribing') return 'processing';
     if (processingState === 'parsing') return 'parsing';
@@ -102,20 +107,17 @@ async function handleAudioReady(blob) {
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', maxWidth:'480px', margin:'0 auto', overflow:'hidden' }}>
 
-      {/* Header */}
       <div style={{ padding:'16px 16px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
         <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'var(--accent)' }}>VML</div>
         <button onClick={() => supabase.auth.signOut()} style={{ fontSize:'11px', color:'var(--text3)', letterSpacing:'0.05em' }}>SIGN OUT</button>
       </div>
 
-      {/* Vehicle picker */}
       <div style={{ padding:'14px 0', flexShrink:0 }}>
         {vehicles.length > 0
           ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); setLastResult(null); setLogOffset(0); }} />
           : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>}
       </div>
 
-      {/* Record section */}
       <div style={{ padding:'8px 16px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', flexShrink:0 }}>
         <RecordButton
           recorderState={uiState}
@@ -136,14 +138,12 @@ async function handleAudioReady(blob) {
         )}
       </div>
 
-      {/* Needs review banner */}
       {lastResult?.needsReview && lastResult?.parsed && (
         <div style={{ flexShrink:0, marginBottom:'12px' }}>
           <NeedsReviewBanner log={{ ...lastResult.parsed, logType: lastResult.logType }} onEdit={setEditingLog} />
         </div>
       )}
 
-      {/* Log feed */}
       <div style={{ flex:1, overflowY:'auto', padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
         <div style={{ fontSize:'10px', color:'var(--text3)', letterSpacing:'0.1em', textTransform:'uppercase', paddingBottom:'4px', borderBottom:'1px solid var(--border)', marginBottom:'4px', flexShrink:0 }}>
           Log History
@@ -164,7 +164,6 @@ async function handleAudioReady(blob) {
         )}
       </div>
 
-      {/* Edit modal */}
       {editingLog && <EditModal log={editingLog} onClose={() => setEditingLog(null)} onSaved={handleLogEdited} />}
     </div>
   );

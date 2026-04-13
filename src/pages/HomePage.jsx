@@ -53,7 +53,7 @@ useEffect(() => {
   if (recorder.state === 'done' && recorder.audioBlob) {
     handleAudioReady(recorder.audioBlob);
   }
-}, [recorder.state]);
+}, [recorder.state, recorder.audioBlob]);
 
 async function handleAudioReady(blob) {
     setErrorMsg(null);

@@ -29,7 +29,7 @@ function loadEnv() {
   } catch {}
 }
 loadEnv();
-
+console.log('KEY:', process.env.ANTHROPIC_API_KEY?.slice(0, 20));
 // ── Same system prompt as parse-log.js ────────────────────────────────────
 const SYSTEM_PROMPT = `You are a vehicle maintenance log parser. 
 The user will give you a voice transcript of them logging vehicle maintenance or a fuel fill-up.
@@ -226,7 +226,10 @@ async function parseTranscript(vehicleName, transcript, currentMileage = 50000) 
     }),
   });
 
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+if (!res.ok) {
+  const errText = await res.text();
+  throw new Error(`Claude API error: ${res.status} — ${errText}`);
+}
 
   const data = await res.json();
   const raw = data.content[0].text.trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '');
@@ -317,7 +320,7 @@ async function runTests() {
   }
 
   console.log('\n\x1b[1m🧪 Layer 3: Claude Parsing Tests\x1b[0m');
-  console.log(`   Model: claude-haiku-4-5-20251001`);
+  console.log(`   Model: claude-haiku-4-5`);
   console.log(`   Cases: ${TEST_CASES.length}\n`);
 
   let passed = 0;

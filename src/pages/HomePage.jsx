@@ -19,9 +19,13 @@ export default function HomePage({ session }) {
   const [processingState, setProcessingState] = useState('idle');
   const [errorMsg, setErrorMsg] = useState(null);
   const [logOffset, setLogOffset] = useState(0);
-  const pendingBlob = useRef(null);
 
-  const recorder = useVoiceRecorder();
+  const selectedVehicleRef = useRef(null);
+  const handleAudioReadyRef = useRef(null);
+
+  const recorder = useVoiceRecorder(useCallback((blob) => {
+    if (handleAudioReadyRef.current) handleAudioReadyRef.current(blob);
+  }, []));
 
   useEffect(() => {
     fetchVehicles()
@@ -47,19 +51,15 @@ export default function HomePage({ session }) {
 
   useEffect(() => {
     if (selectedVehicle) {
+      selectedVehicleRef.current = selectedVehicle;
       setLogOffset(0);
       loadLogs(selectedVehicle, true);
     }
   }, [selectedVehicle?.id]);
 
-  useEffect(() => {
-    if (recorder.state === 'done' && recorder.audioBlob && !pendingBlob.current) {
-      pendingBlob.current = recorder.audioBlob;
-      handleAudioReady(recorder.audioBlob);
-    }
-  }, [recorder.state, recorder.audioBlob]);
-
   async function handleAudioReady(blob) {
+    const vehicle = selectedVehicleRef.current;
+    if (!vehicle) return;
     setErrorMsg(null);
     setLastResult(null);
     try {
@@ -68,27 +68,28 @@ export default function HomePage({ session }) {
       setProcessingState('parsing');
       const result = await parseLog({
         transcript,
-        vehicleId: selectedVehicle.id,
-        vehicleName: selectedVehicle.name,
-        currentMileage: selectedVehicle.current_mileage,
+        vehicleId: vehicle.id,
+        vehicleName: vehicle.name,
+        currentMileage: vehicle.current_mileage,
       });
       setLastResult(result);
       if (result.parsed) {
-        await loadLogs(selectedVehicle, true);
-        if (result.parsed.mileage && result.parsed.mileage > (selectedVehicle.current_mileage || 0)) {
-          const updated = { ...selectedVehicle, current_mileage: result.parsed.mileage };
+        await loadLogs(vehicle, true);
+        if (result.parsed.mileage && result.parsed.mileage > (vehicle.current_mileage || 0)) {
+          const updated = { ...vehicle, current_mileage: result.parsed.mileage };
           setSelectedVehicle(updated);
-          setVehicles(prev => prev.map(v => v.id === selectedVehicle.id ? updated : v));
+          selectedVehicleRef.current = updated;
+          setVehicles(prev => prev.map(v => v.id === vehicle.id ? updated : v));
         }
       }
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
       setProcessingState('idle');
-      pendingBlob.current = null;
-      recorder.reset();
     }
   }
+
+  handleAudioReadyRef.current = handleAudioReady;
 
   function getRecorderState() {
     if (processingState === 'transcribing') return 'processing';
@@ -114,7 +115,7 @@ export default function HomePage({ session }) {
 
       <div style={{ padding:'14px 0', flexShrink:0 }}>
         {vehicles.length > 0
-          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); setLastResult(null); setLogOffset(0); }} />
+          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { setSelectedVehicle(v); selectedVehicleRef.current = v; setLastResult(null); setLogOffset(0); }} />
           : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>}
       </div>
 

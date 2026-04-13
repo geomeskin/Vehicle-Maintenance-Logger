@@ -54,7 +54,7 @@ export default function HomePage({ session }) {
     }
   }, [recorder.state]);
 
-  async function handleAudioReady(blob) {
+async function handleAudioReady(blob) {
     setErrorMsg(null);
     setLastResult(null);
     try {
@@ -76,10 +76,13 @@ export default function HomePage({ session }) {
           setVehicles(prev => prev.map(v => v.id === selectedVehicle.id ? updated : v));
         }
       }
-    } catch (err) { setErrorMsg(err.message); }
-    finally { setProcessingState('idle'); recorder.reset(); }
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setProcessingState('idle');
+      recorder.reset();
+    }
   }
-
   function getRecorderState() {
     if (processingState === 'transcribing') return 'processing';
     if (processingState === 'parsing') return 'parsing';

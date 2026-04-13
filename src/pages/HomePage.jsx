@@ -64,8 +64,10 @@ export default function HomePage({ session }) {
         currentMileage: selectedVehicle.current_mileage,
       });
       setLastResult(result);
-      if (result.parsed) {
-        setLogs(prev => [{ ...result.parsed, logType: result.logType }, ...prev]);
+        setLastResult(result);
+        if (result.parsed) {
+          await loadLogs(selectedVehicle, true);
+        }
         if (result.parsed.mileage && result.parsed.mileage > (selectedVehicle.current_mileage || 0)) {
           const updated = { ...selectedVehicle, current_mileage: result.parsed.mileage };
           setSelectedVehicle(updated);

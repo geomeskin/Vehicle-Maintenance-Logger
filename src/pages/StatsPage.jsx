@@ -252,8 +252,6 @@ export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log('StatsPage render, selectedVehicle:', selectedVehicle?.id);
-
   useEffect(() => {
     if (!selectedVehicle) return;
     setLoading(true);

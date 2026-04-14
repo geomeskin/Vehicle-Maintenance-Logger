@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+
+  <!-- WRENCH (top-left to bottom-right) -->
+  <g stroke="#e8ff47" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Handle -->
+    <line x1="155" y1="390" x2="335" y2="210" stroke-width="36"/>
+    <!-- Head ring -->
+    <circle cx="370" cy="175" r="62" fill="none" stroke-width="36"/>
+    <!-- Jaw gap filled with bg to create open wrench -->
+    <path d="M 370 113 L 310 155 L 310 195 L 370 237" stroke="#0a0a0a" stroke-width="40" fill="none"/>
+    <!-- Tail end cap -->
+    <circle cx="138" cy="407" r="22" fill="#e8ff47" stroke="none"/>
+  </g>
+
+  <!-- GAS PUMP NOZZLE (top-right to bottom-left) -->
+  <g stroke="#e8ff47" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Barrel -->
+    <line x1="357" y1="390" x2="177" y2="210" stroke-width="36"/>
+    <!-- Hose curl at top-right -->
+    <path d="M 177 210 Q 130 160 165 120 Q 200 80 245 110" fill="none" stroke-width="28"/>
+    <!-- Trigger -->
+    <line x1="310" y1="320" x2="348" y2="358" stroke-width="22"/>
+    <line x1="310" y1="320" x2="276" y2="320" stroke-width="22"/>
+    <!-- Nozzle tip at bottom-left -->
+    <line x1="357" y1="390" x2="395" y2="390" stroke-width="36"/>
+    <line x1="395" y1="370" x2="395" y2="415" stroke-width="30"/>
+    <circle cx="374" cy="407" r="14" fill="#e8ff47" stroke="none"/>
+  </g>
+
+  <!-- Center cross dot -->
+  <circle cx="256" cy="295" r="18" fill="#0a0a0a"/>
+  <circle cx="256" cy="295" r="9" fill="#e8ff47"/>
+</svg>

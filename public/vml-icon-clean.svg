@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+
+  <line x1="344" y1="148" x2="122" y2="390" stroke="#e8ff47" stroke-width="38" stroke-linecap="round"/>
+
+  <g transform="translate(390,118) rotate(15)">
+    <path d="M36,-62 L-36,-62 L-72,0 L-36,62 L36,62 L72,0"
+          fill="none" stroke="#e8ff47" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20,-34 L-20,-34 L-40,0 L-20,34 L20,34 L40,0 Z"
+          fill="#0a0a0a" stroke="none"/>
+  </g>
+
+  <circle cx="100" cy="412" r="30" fill="#e8ff47"/>
+
+  <line x1="140" y1="140" x2="368" y2="388" stroke="#e8ff47" stroke-width="38" stroke-linecap="round"/>
+
+  <path d="M140 140 Q68 84 88 30 Q108 -16 162 12"
+        fill="none" stroke="#e8ff47" stroke-width="28" stroke-linecap="round"/>
+
+  <line x1="228" y1="232" x2="190" y2="270" stroke="#e8ff47" stroke-width="24" stroke-linecap="round"/>
+  <line x1="190" y1="270" x2="158" y2="250" stroke="#e8ff47" stroke-width="24" stroke-linecap="round"/>
+
+  <line x1="368" y1="388" x2="414" y2="360" stroke="#e8ff47" stroke-width="34" stroke-linecap="round"/>
+  <line x1="414" y1="360" x2="430" y2="410" stroke="#e8ff47" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="430" cy="412" r="18" fill="#e8ff47"/>
+
+  <circle cx="256" cy="264" r="24" fill="#0a0a0a"/>
+  <circle cx="256" cy="264" r="12" fill="#e8ff47"/>
+</svg>

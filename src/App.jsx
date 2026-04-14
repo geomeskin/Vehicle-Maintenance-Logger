@@ -14,11 +14,15 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
+        setSession(session);
+      } else if (event === 'SIGNED_IN') {
+        setSession(session);
+        // deliberately NOT clearing isRecovery here
       } else {
         setIsRecovery(false);
+        setSession(session);
       }
     });
 

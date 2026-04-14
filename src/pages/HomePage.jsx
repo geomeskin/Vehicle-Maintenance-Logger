@@ -10,15 +10,21 @@ import NeedsReviewBanner from '../components/NeedsReviewBanner';
 export default function HomePage({ session, vehicles, selectedVehicle, onSelectVehicle, onVehiclesUpdated }) {
   const [logs, setLogs] = useState([]);
   const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
   const [lastResult, setLastResult] = useState(null);
   const [processingState, setProcessingState] = useState('idle');
   const [errorMsg, setErrorMsg] = useState(null);
-  const [logOffset, setLogOffset] = useState(0);
 
   const selectedVehicleRef = useRef(null);
   const handleAudioReadyRef = useRef(null);
+  const nextCursorRef = useRef(null);
+
+  // Keep ref in sync so callbacks always read the latest cursor
+  useEffect(() => {
+    nextCursorRef.current = nextCursor;
+  }, [nextCursor]);
 
   const recorder = useVoiceRecorder(useCallback((blob) => {
     if (handleAudioReadyRef.current) handleAudioReadyRef.current(blob);
@@ -27,23 +33,23 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
   const loadLogs = useCallback(async (vehicle, reset = true) => {
     if (!vehicle) return;
     setLoadingLogs(true);
-    const off = reset ? 0 : logOffset;
     try {
-      const result = await fetchLogs({ vehicleId: vehicle.id, limit: 20, offset: off });
+      const before = reset ? null : nextCursorRef.current;
+      const result = await fetchLogs({ vehicleId: vehicle.id, limit: 20, before });
       setLogs(prev => reset ? result.logs : [...prev, ...result.logs]);
       setHasMore(result.hasMore);
-      setLogOffset(off + result.logs.length);
+      setNextCursor(result.nextCursor);
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
       setLoadingLogs(false);
     }
-  }, [logOffset]);
+  }, []);
 
   useEffect(() => {
     if (selectedVehicle) {
       selectedVehicleRef.current = selectedVehicle;
-      setLogOffset(0);
+      setNextCursor(null);
       loadLogs(selectedVehicle, true);
     }
   }, [selectedVehicle?.id]);
@@ -103,8 +109,18 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
 
       <div style={{ padding:'14px 0', flexShrink:0 }}>
         {vehicles.length > 0
-          ? <VehiclePicker vehicles={vehicles} selected={selectedVehicle} onSelect={v => { onSelectVehicle(v); selectedVehicleRef.current = v; setLastResult(null); setLogOffset(0); }} />
-          : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>}
+          ? <VehiclePicker
+              vehicles={vehicles}
+              selected={selectedVehicle}
+              onSelect={v => {
+                onSelectVehicle(v);
+                selectedVehicleRef.current = v;
+                setLastResult(null);
+                setNextCursor(null);
+              }}
+            />
+          : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>
+        }
       </div>
 
       <div style={{ padding:'8px 16px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', flexShrink:0 }}>
@@ -146,14 +162,23 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
           <LogCard key={`${log.logType}-${log.id}`} log={log} onEdit={setEditingLog} />
         ))}
         {hasMore && (
-          <button onClick={() => loadLogs(selectedVehicle, false)} disabled={loadingLogs}
-            style={{ padding:'12px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--text2)', letterSpacing:'0.05em' }}>
+          <button
+            onClick={() => loadLogs(selectedVehicle, false)}
+            disabled={loadingLogs}
+            style={{ padding:'12px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--text2)', letterSpacing:'0.05em' }}
+          >
             {loadingLogs ? 'LOADING...' : 'LOAD MORE'}
           </button>
         )}
       </div>
 
-      {editingLog && <EditModal log={editingLog} onClose={() => setEditingLog(null)} onSaved={handleLogEdited} />}
+      {editingLog && (
+        <EditModal
+          log={editingLog}
+          onClose={() => setEditingLog(null)}
+          onSaved={handleLogEdited}
+        />
+      )}
     </div>
   );
 }

@@ -1,14 +1,17 @@
 /**
- * GET /api/logs?vehicleId=<uuid>&type=all|maintenance|fuel&limit=20&offset=0
+ * GET /api/logs?vehicleId=<uuid>&type=all|maintenance|fuel&limit=20&before=<iso-timestamp>
  *
  * Returns paginated log history for a vehicle,
  * merging maintenance and fuel logs into a single sorted feed.
  *
+ * Pagination uses a cursor (before=) instead of numeric offset.
+ * Pass the logged_at of the last item in the previous page to get the next page.
+ *
  * Response:
  *   {
  *     logs: LogEntry[],
- *     total: number,
- *     hasMore: boolean
+ *     hasMore: boolean,
+ *     nextCursor: string | null   — pass as ?before= for next page
  *   }
  */
 
@@ -36,20 +39,22 @@ export default async function handler(req, res) {
     vehicleId,
     type = 'all',
     limit = '20',
-    offset = '0',
+    before,             // ISO timestamp cursor — undefined on first page
   } = req.query;
 
   if (!vehicleId) return res.status(400).json({ error: 'vehicleId is required' });
 
   const supabase = getSupabase(authHeader);
   const pageSize = Math.min(parseInt(limit), 100);
-  const pageOffset = parseInt(offset);
+
+  // Fetch one extra row so we can detect hasMore without a count query
+  const fetchSize = pageSize + 1;
 
   const logs = [];
 
-  // ── Fetch maintenance logs ─────────────────────────────────────────────
+  // ── Fetch maintenance logs ──────────────────────────────────────────────
   if (type === 'all' || type === 'maintenance') {
-    const { data, error } = await supabase
+    let query = supabase
       .from('maintenance_logs')
       .select(`
         id, category, description, mileage, cost, shop_name,
@@ -59,18 +64,18 @@ export default async function handler(req, res) {
       `)
       .eq('vehicle_id', vehicleId)
       .order('logged_at', { ascending: false })
-      .range(pageOffset, pageOffset + pageSize - 1);
+      .limit(fetchSize);
 
+    if (before) query = query.lt('logged_at', before);
+
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
-
-    data.forEach((row) =>
-      logs.push({ ...row, logType: 'maintenance' })
-    );
+    data.forEach(row => logs.push({ ...row, logType: 'maintenance' }));
   }
 
-  // ── Fetch fuel logs ────────────────────────────────────────────────────
+  // ── Fetch fuel logs ─────────────────────────────────────────────────────
   if (type === 'all' || type === 'fuel') {
-    const { data, error } = await supabase
+    let query = supabase
       .from('fuel_logs')
       .select(`
         id, gallons, price_per_gallon, total_cost, fuel_grade,
@@ -79,24 +84,27 @@ export default async function handler(req, res) {
       `)
       .eq('vehicle_id', vehicleId)
       .order('logged_at', { ascending: false })
-      .range(pageOffset, pageOffset + pageSize - 1);
+      .limit(fetchSize);
 
+    if (before) query = query.lt('logged_at', before);
+
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
-
-    data.forEach((row) =>
-      logs.push({ ...row, logType: 'fuel' })
-    );
+    data.forEach(row => logs.push({ ...row, logType: 'fuel' }));
   }
 
-  // ── Sort merged results by logged_at desc ──────────────────────────────
+  // ── Sort merged results by logged_at desc ───────────────────────────────
   logs.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
 
-  // ── Trim to requested page size ────────────────────────────────────────
+  // ── Paginate ────────────────────────────────────────────────────────────
+  const hasMore = logs.length > pageSize;
   const paginated = logs.slice(0, pageSize);
+  const nextCursor = hasMore ? paginated[paginated.length - 1].logged_at : null;
 
   return res.status(200).json({
     logs: paginated,
-    hasMore: logs.length > pageSize,
+    hasMore,
+    nextCursor,   // pass as ?before= on next request
     count: paginated.length,
   });
 }

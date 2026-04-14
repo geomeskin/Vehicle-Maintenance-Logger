@@ -49,9 +49,12 @@ export async function fetchVehicles() {
   return vehicles;
 }
 
-export async function fetchLogs({ vehicleId, type = 'all', limit = 20, offset = 0 }) {
+// Uses cursor-based pagination via `before` (ISO timestamp).
+// Pass result.nextCursor as `before` to fetch the next page.
+export async function fetchLogs({ vehicleId, type = 'all', limit = 20, before = null }) {
   const headers = await authHeaders();
-  const params = new URLSearchParams({ vehicleId, type, limit, offset });
+  const params = new URLSearchParams({ vehicleId, type, limit });
+  if (before) params.set('before', before);
   const res = await fetch(`/api/logs?${params}`, { headers });
   if (!res.ok) throw new Error('Failed to fetch logs');
   return res.json();

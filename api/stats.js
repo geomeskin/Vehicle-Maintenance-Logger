@@ -36,6 +36,7 @@ export default async function handler(req, res) {
   const supabase = getSupabase(authHeader);
 
   // Run all queries in parallel
+  // Limits added to prevent unbounded fetches as data grows
   const [
     vehicleRes,
     maintenanceRes,
@@ -49,27 +50,31 @@ export default async function handler(req, res) {
       .eq('id', vehicleId)
       .single(),
 
-    // All maintenance logs
+    // Maintenance logs — capped at 500, newest first
+    // Enough for years of personal use; revisit if exceeded
     supabase
       .from('maintenance_logs')
       .select('*')
       .eq('vehicle_id', vehicleId)
-      .order('logged_at', { ascending: false }),
+      .order('logged_at', { ascending: false })
+      .limit(500),
 
-    // All fuel logs
+    // Fuel logs — capped at 500, newest first
     supabase
       .from('fuel_logs')
       .select('*')
       .eq('vehicle_id', vehicleId)
-      .order('logged_at', { ascending: false }),
+      .order('logged_at', { ascending: false })
+      .limit(500),
 
-    // Upcoming reminders
+    // Upcoming reminders — only rows with next_service_mileage set
     supabase
       .from('maintenance_logs')
       .select('id, category, description, next_service_mileage, next_service_date, mileage, logged_at')
       .eq('vehicle_id', vehicleId)
       .not('next_service_mileage', 'is', null)
-      .order('next_service_mileage', { ascending: true }),
+      .order('next_service_mileage', { ascending: true })
+      .limit(20),
   ]);
 
   if (vehicleRes.error) return res.status(500).json({ error: vehicleRes.error.message });
@@ -79,7 +84,7 @@ export default async function handler(req, res) {
   const fuel = fuelRes.data || [];
   const reminders = remindersRes.data || [];
 
-  // ── Oil change status ────────────────────────────────────────────────────
+  // ── Oil change status ─────────────────────────────────────────────────────
   const oilChanges = maintenance.filter(m => m.category === 'oil_change');
   const lastOilChange = oilChanges[0] || null;
   const milesSinceOil = lastOilChange && vehicle.current_mileage
@@ -90,7 +95,7 @@ export default async function handler(req, res) {
     : milesSinceOil > 3500 ? 'due_soon'
     : 'ok';
 
-  // ── Cost totals ──────────────────────────────────────────────────────────
+  // ── Cost totals ───────────────────────────────────────────────────────────
   const thisYear = new Date().getFullYear();
   const maintenanceCosts = maintenance.filter(m => m.cost);
   const fuelCosts = fuel.filter(f => f.total_cost);
@@ -105,7 +110,7 @@ export default async function handler(req, res) {
     .filter(f => new Date(f.logged_at).getFullYear() === thisYear)
     .reduce((s, f) => s + Number(f.total_cost), 0);
 
-  // ── Cost by category ─────────────────────────────────────────────────────
+  // ── Cost by category ──────────────────────────────────────────────────────
   const categoryMap = {};
   maintenanceCosts.forEach(m => {
     if (!categoryMap[m.category]) categoryMap[m.category] = { count: 0, total: 0 };
@@ -116,7 +121,7 @@ export default async function handler(req, res) {
     .map(([category, data]) => ({ category, ...data }))
     .sort((a, b) => b.total - a.total);
 
-  // ── MPG trend (last 10 fill-ups with miles_since_last) ───────────────────
+  // ── MPG trend (last 10 fill-ups with miles_since_last) ────────────────────
   const mpgData = fuel
     .filter(f => f.gallons && f.miles_since_last && f.gallons > 0)
     .slice(0, 10)
@@ -134,7 +139,7 @@ export default async function handler(req, res) {
     ? Math.round((mpgData.reduce((s, f) => s + f.mpg, 0) / mpgData.length) * 10) / 10
     : null;
 
-  // ── Reminders with status ────────────────────────────────────────────────
+  // ── Reminders with status ─────────────────────────────────────────────────
   const remindersWithStatus = reminders.map(r => {
     const milesUntil = r.next_service_mileage && vehicle.current_mileage
       ? r.next_service_mileage - vehicle.current_mileage
@@ -147,7 +152,7 @@ export default async function handler(req, res) {
     return { ...r, miles_until: milesUntil, status };
   });
 
-  // ── Recent service history (last 20, combined) ───────────────────────────
+  // ── Recent service history (last 30, combined) ────────────────────────────
   const history = [
     ...maintenance.slice(0, 20).map(m => ({ ...m, logType: 'maintenance' })),
     ...fuel.slice(0, 20).map(f => ({ ...f, logType: 'fuel' })),

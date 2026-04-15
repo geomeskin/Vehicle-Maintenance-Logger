@@ -15,10 +15,8 @@ export default function App() {
     const isRecoveryUrl = hash.includes('type=recovery') || params.get('recovery') === '1';
 
     if (isRecoveryUrl) {
-      // Grab email BEFORE clearing session
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user?.email) setRecoveryEmail(user.email);
-      });
+      const emailParam = params.get('email') || '';
+      setRecoveryEmail(emailParam);
       setIsRecovery(true);
       setSession(null);
     } else {
@@ -30,6 +28,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('auth event:', event, session);
       if (event === 'PASSWORD_RECOVERY') {
+        if (session?.user?.email) setRecoveryEmail(session.user.email);
         setIsRecovery(true);
         setSession(session);
       } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {

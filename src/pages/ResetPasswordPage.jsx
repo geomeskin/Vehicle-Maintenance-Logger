@@ -108,7 +108,7 @@ export default function ResetPasswordPage({ onDone, email }) {
             <button
               type="button"
               onClick={() => {
-                window.location.href = window.location.origin + '?recovery=1&email=' + encodeURIComponent('YOUR_ACTUAL_EMAIL@HERE.COM');
+                window.location.href = window.location.origin + '?recovery=1&email=' + encodeURIComponent('da.meskin@gmail.com');
               }}
               style={{
                 marginTop: '2rem',

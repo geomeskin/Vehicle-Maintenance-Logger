@@ -104,26 +104,24 @@ export default function ResetPasswordPage({ onDone, email }) {
             {error && (
               <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error}</p>
             )}
-            {/* DEV ONLY — remove before sharing with users */}
             <button
-              type="button"
-              onClick={() => {
-                window.location.href = window.location.origin + '?recovery=1&email=' + encodeURIComponent('da.meskin@gmail.com');
-              }}
+              type="submit"
+              disabled={loading || !password || !confirm}
               style={{
-                marginTop: '2rem',
-                background: 'none',
-                border: 'none',
-                color: '#333',
-                fontSize: '0.7rem',
-                cursor: 'pointer',
-                textAlign: 'center',
                 width: '100%',
+                padding: '14px',
+                background: loading || !password || !confirm ? '#333' : '#2563eb',
+                color: '#fff',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: loading || !password || !confirm ? 'default' : 'pointer',
+                transition: 'background 0.15s',
               }}
             >
-              [dev] test reset form
+              {loading ? 'Saving...' : 'Set password'}
             </button>
-
           </form>
         )}
       </div>

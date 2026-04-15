@@ -132,6 +132,7 @@ export default function MainApp({ session }) {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showSetPassword, setShowSetPassword] = useState(false);
+  const [vehicleError, setVehicleError] = useState(null);
 
   useEffect(() => {
     fetchVehicles()
@@ -143,13 +144,29 @@ export default function MainApp({ session }) {
           setSelectedVehicle(defaultVehicle);
         }
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        setVehicleError(err.message);
+      });
   }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
 
       {showSetPassword && <SetPasswordModal onClose={() => setShowSetPassword(false)} />}
+
+      {vehicleError && (
+        <div style={{
+          background: '#1a0a0a',
+          border: '1px solid #f87171',
+          color: '#f87171',
+          fontSize: '11px',
+          padding: '8px 16px',
+          flexShrink: 0,
+        }}>
+          Vehicle load error: {vehicleError}
+        </div>
+      )}
 
       <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: 'var(--accent)', letterSpacing: '-0.01em' }}>

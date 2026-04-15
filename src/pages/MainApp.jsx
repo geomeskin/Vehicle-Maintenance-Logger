@@ -135,6 +135,7 @@ export default function MainApp({ session }) {
   const [vehicleError, setVehicleError] = useState(null);
 
   useEffect(() => {
+    if (!session) return;
     fetchVehicles()
       .then(vs => {
         setVehicles(vs);
@@ -148,7 +149,7 @@ export default function MainApp({ session }) {
         console.error(err);
         setVehicleError(err.message);
       });
-  }, []);
+  }, [session]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>

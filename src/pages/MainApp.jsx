@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { fetchVehicles } from '../api';
@@ -26,10 +25,113 @@ function StatsIcon({ active }) {
   );
 }
 
+function SetPasswordModal({ onClose }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (password !== confirm) { setError('Passwords do not match'); return; }
+    if (password.length < 6) { setError('Minimum 6 characters'); return; }
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      setSuccess(true);
+      setTimeout(() => onClose(), 2000);
+    }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    background: '#111',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    outline: 'none',
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px', zIndex: 1000,
+    }}>
+      <div style={{
+        background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px',
+        padding: '24px', width: '100%', maxWidth: '340px',
+      }}>
+        <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: '700', margin: '0 0 8px' }}>
+          Set Password
+        </h2>
+        <p style={{ color: '#666', fontSize: '13px', margin: '0 0 20px' }}>
+          Set a password so you can sign in with email + password next time.
+        </p>
+
+        {success ? (
+          <div style={{ background: '#1a2e1a', border: '1px solid #2a4a2a', borderRadius: '8px', padding: '16px', color: '#4ade80', fontSize: '14px' }}>
+            Password set! You're all set. ✓
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <input
+              type="password"
+              placeholder="New password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              style={inputStyle}
+            />
+            <input
+              type="password"
+              placeholder="Confirm password"
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              required
+              style={inputStyle}
+            />
+            {error && <p style={{ color: '#f87171', fontSize: '13px', margin: 0 }}>{error}</p>}
+            <button
+              type="submit"
+              disabled={loading || !password || !confirm}
+              style={{
+                padding: '12px',
+                background: loading || !password || !confirm ? '#333' : '#c8f135',
+                color: loading || !password || !confirm ? '#666' : '#0f0f0f',
+                border: 'none', borderRadius: '8px',
+                fontSize: '15px', fontWeight: '700', cursor: 'pointer',
+              }}
+            >
+              {loading ? 'Saving...' : 'Set Password'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: 'none', border: 'none', color: '#666', fontSize: '13px', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MainApp({ session }) {
   const [tab, setTab] = useState('log');
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [showSetPassword, setShowSetPassword] = useState(false);
 
   useEffect(() => {
     fetchVehicles()
@@ -47,6 +149,8 @@ export default function MainApp({ session }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
 
+      {showSetPassword && <SetPasswordModal onClose={() => setShowSetPassword(false)} />}
+
       <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: 'var(--accent)', letterSpacing: '-0.01em' }}>
           VML
@@ -54,12 +158,20 @@ export default function MainApp({ session }) {
         <div style={{ fontSize: '11px', color: 'var(--text3)' }}>
           {session?.user?.email?.split('@')[0]}
         </div>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
-        >
-          SIGN OUT
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowSetPassword(true)}
+            style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
+          >
+            SET PW
+          </button>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
+          >
+            SIGN OUT
+          </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>

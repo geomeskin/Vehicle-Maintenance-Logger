@@ -6,35 +6,29 @@
  * and iOS Safari (MP4/AAC).
  *
  * Usage:
- *   const { state, start, stop, cancel, audioBlob, error } = useVoiceRecorder();
+ *   const { state, start, stop, cancel, duration, error } = useVoiceRecorder(onAudioReady);
  *
  * States: 'idle' | 'requesting' | 'recording' | 'processing' | 'done' | 'error'
  */
 
 import { useState, useRef, useCallback } from 'react';
 
-// Determine the best supported MIME type for this browser/platform
 function getSupportedMimeType() {
   const types = [
-    'audio/mp4',               // iOS Safari, Safari desktop — check FIRST
+    'audio/mp4',               // iOS Safari — check FIRST
     'audio/webm;codecs=opus',  // Android Chrome, desktop Chrome
     'audio/webm',              // Fallback WebM
     'audio/ogg;codecs=opus',   // Firefox
     'audio/ogg',               // Firefox fallback
   ];
-
   for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) {
-      return type;
-    }
+    if (MediaRecorder.isTypeSupported(type)) return type;
   }
-
-  return ''; // Let browser use default
+  return '';
 }
 
-export function useVoiceRecorder() {
+export function useVoiceRecorder(onAudioReady) {
   const [state, setState] = useState('idle');
-  const [audioBlob, setAudioBlob] = useState(null);
   const [error, setError] = useState(null);
   const [duration, setDuration] = useState(0);
 
@@ -43,6 +37,8 @@ export function useVoiceRecorder() {
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const onAudioReadyRef = useRef(onAudioReady);
+  onAudioReadyRef.current = onAudioReady; // always latest
 
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -57,21 +53,18 @@ export function useVoiceRecorder() {
   const start = useCallback(async () => {
     try {
       // ⚠️ iOS Safari: getUserMedia() MUST be the very first thing called.
-      // Any setState() call before this consumes the user gesture token and
-      // the microphone permission prompt will silently never appear.
-      // Do NOT move state updates above this line.
+      // Any setState() before this consumes the user gesture token and the
+      // mic permission prompt silently never appears.
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          // ⚠️ iOS Safari: Do NOT set sampleRate here — it causes silent
-          // failures on some iOS versions. Whisper handles any sample rate fine.
+          // ⚠️ No sampleRate — causes silent failures on some iOS versions
         },
       });
 
-      // Safe to update state now that we have the stream
+      // Safe to update state now
       setError(null);
-      setAudioBlob(null);
       setDuration(0);
       setState('requesting');
 
@@ -94,27 +87,27 @@ export function useVoiceRecorder() {
         const blob = new Blob(chunksRef.current, {
           type: mimeType || 'audio/mp4',
         });
-        setAudioBlob(blob);
-        setState('done');
+        setState('idle'); // let HomePage drive the processing state
         cleanup();
+        if (onAudioReadyRef.current) onAudioReadyRef.current(blob);
       };
 
       recorder.onerror = (e) => {
-        setError('Recording error: ' + e.error?.message);
+        setError('Recording error: ' + (e.error?.message || 'unknown'));
         setState('error');
         cleanup();
       };
 
       mediaRecorderRef.current = recorder;
-      recorder.start(250); // Collect chunks every 250ms
+      recorder.start(250);
 
       startTimeRef.current = Date.now();
       setState('recording');
 
-      // Duration timer
       timerRef.current = setInterval(() => {
         setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 1000);
+
     } catch (err) {
       let message = 'Microphone access denied';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -143,16 +136,14 @@ export function useVoiceRecorder() {
       try { mediaRecorderRef.current.stop(); } catch (_) {}
     }
     cleanup();
-    setAudioBlob(null);
     setState('idle');
   }, [cleanup]);
 
   const reset = useCallback(() => {
-    setAudioBlob(null);
     setError(null);
     setDuration(0);
     setState('idle');
   }, []);
 
-  return { state, audioBlob, error, duration, start, stop, cancel, reset };
+  return { state, error, duration, start, stop, cancel, reset };
 }

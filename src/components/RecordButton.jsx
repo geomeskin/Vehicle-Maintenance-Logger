@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const STATES = {
-  idle:       { label: 'HOLD TO RECORD', color: 'var(--bg3)', border: 'var(--border2)', text: 'var(--text2)' },
+  idle:       { label: 'TAP TO RECORD', color: 'var(--bg3)', border: 'var(--border2)', text: 'var(--text2)' },
   requesting: { label: 'REQUESTING MIC', color: 'var(--bg3)', border: 'var(--border2)', text: 'var(--text2)' },
   recording:  { label: 'RECORDING',      color: '#1a0a0a',    border: 'var(--red)',      text: 'var(--red)' },
   processing: { label: 'TRANSCRIBING',   color: '#0a0f1a',    border: 'var(--blue)',     text: 'var(--blue)' },

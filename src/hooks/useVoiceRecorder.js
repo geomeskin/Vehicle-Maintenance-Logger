@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 
 function getSupportedMimeType() {
@@ -38,13 +39,14 @@ export function useVoiceRecorder(onBlobReady) {
   const start = useCallback(async () => {
     setError(null);
     setDuration(0);
-    setState('requesting');
 
     try {
+      // Call getUserMedia FIRST before any setState — iOS requires direct user gesture
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
       });
 
+      setState('requesting');
       streamRef.current = stream;
       const mimeType = getSupportedMimeType();
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});

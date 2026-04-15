@@ -10,35 +10,34 @@ export default function App() {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-  const hash = window.location.hash;
-  const params = new URLSearchParams(window.location.search);
-  const isRecoveryUrl = hash.includes('type=recovery') || params.get('recovery') === '1';
-  
-  if (isRecoveryUrl) {
-    setIsRecovery(true);
-    // Don't call getSession yet — show the form immediately
-    setSession(null);
-    return;
-  }
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    const isRecoveryUrl = hash.includes('type=recovery') || params.get('recovery') === '1';
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session);
-  });
-
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
+    if (isRecoveryUrl) {
       setIsRecovery(true);
-      setSession(session);
-    } else if (event === 'SIGNED_IN') {
-      setSession(session);
-    } else {
-      setIsRecovery(false);
-      setSession(session);
+      setSession(null);
+      return;
     }
-  });
 
-  return () => subscription.unsubscribe();
-}, []);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true);
+        setSession(session);
+      } else if (event === 'SIGNED_IN') {
+        setSession(session);
+      } else {
+        setIsRecovery(false);
+        setSession(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (session === undefined) {
     return (
@@ -49,7 +48,10 @@ export default function App() {
   }
 
   if (isRecovery) {
-    return <ResetPasswordPage onDone={() => setIsRecovery(false)} />;
+    return <ResetPasswordPage onDone={() => {
+      setIsRecovery(false);
+      window.history.replaceState({}, '', window.location.pathname);
+    }} />;
   }
 
   return session

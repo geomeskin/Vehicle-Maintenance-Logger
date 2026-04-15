@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
 export default function ResetPasswordPage({ onDone }) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  
+  // Grab email immediately on mount while session is still valid
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) setEmail(user.email);
+    });
+  }, []);
+
   async function handleReset(e) {
     e.preventDefault();
     if (password !== confirm) {
@@ -21,13 +28,23 @@ export default function ResetPasswordPage({ onDone }) {
     }
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess(true);
-      setTimeout(() => onDone(), 2000);
+
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    if (updateError) {
+      setError(updateError.message);
+      setLoading(false);
+      return;
     }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    setSuccess(true);
+    setTimeout(() => onDone(), 2000);
     setLoading(false);
   }
 
@@ -64,7 +81,7 @@ export default function ResetPasswordPage({ onDone }) {
 
         {success ? (
           <div style={{
-            background: '#1a2e1a',
+            background: '##1a2e1a',
             border: '1px solid #2a4a2a',
             borderRadius: '12px',
             padding: '20px',

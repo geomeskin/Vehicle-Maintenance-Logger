@@ -30,6 +30,7 @@ export default function RecordButton({ recorderState, duration, onStart, onStop,
   }, [isRecording]);
 
   function handleClick() {
+    alert('tapped');
     if (disabled) return;
     if (recorderState === 'idle' || recorderState === 'done' || recorderState === 'error') {
       onStart();

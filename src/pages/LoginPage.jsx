@@ -237,8 +237,7 @@ export default function LoginPage() {
 <button
   type="button"
   onClick={() => {
-    window.location.hash = 'type=recovery';
-    window.location.reload();
+    alert('hash: ' + window.location.hash);
   }}
   style={{
     marginTop: '2rem',
@@ -251,7 +250,7 @@ export default function LoginPage() {
     width: '100%',
   }}
 >
-  [dev] test reset form
+  [dev] check hash
 </button>
     </div>
   );

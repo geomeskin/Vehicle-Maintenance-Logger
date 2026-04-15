@@ -1,22 +1,40 @@
+/**
+ * useVoiceRecorder.js
+ *
+ * Custom React hook for voice recording.
+ * Handles cross-platform differences between Android (WebM/Opus)
+ * and iOS Safari (MP4/AAC).
+ *
+ * Usage:
+ *   const { state, start, stop, cancel, audioBlob, error } = useVoiceRecorder();
+ *
+ * States: 'idle' | 'requesting' | 'recording' | 'processing' | 'done' | 'error'
+ */
 
 import { useState, useRef, useCallback } from 'react';
 
+// Determine the best supported MIME type for this browser/platform
 function getSupportedMimeType() {
   const types = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-    'audio/ogg;codecs=opus',
-    'audio/ogg',
+    'audio/mp4',               // iOS Safari, Safari desktop — check FIRST
+    'audio/webm;codecs=opus',  // Android Chrome, desktop Chrome
+    'audio/webm',              // Fallback WebM
+    'audio/ogg;codecs=opus',   // Firefox
+    'audio/ogg',               // Firefox fallback
   ];
+
   for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
+    if (MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
   }
-  return '';
+
+  return ''; // Let browser use default
 }
 
-export function useVoiceRecorder(onBlobReady) {
+export function useVoiceRecorder() {
   const [state, setState] = useState('idle');
+  const [audioBlob, setAudioBlob] = useState(null);
   const [error, setError] = useState(null);
   const [duration, setDuration] = useState(0);
 
@@ -29,7 +47,7 @@ export function useVoiceRecorder(onBlobReady) {
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     mediaRecorderRef.current = null;
@@ -37,56 +55,78 @@ export function useVoiceRecorder(onBlobReady) {
   }, []);
 
   const start = useCallback(async () => {
-    setError(null);
-    setDuration(0);
-
     try {
-      // Call getUserMedia FIRST before any setState — iOS requires direct user gesture
+      // ⚠️ iOS Safari: getUserMedia() MUST be the very first thing called.
+      // Any setState() call before this consumes the user gesture token and
+      // the microphone permission prompt will silently never appear.
+      // Do NOT move state updates above this line.
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          // ⚠️ iOS Safari: Do NOT set sampleRate here — it causes silent
+          // failures on some iOS versions. Whisper handles any sample rate fine.
+        },
       });
 
+      // Safe to update state now that we have the stream
+      setError(null);
+      setAudioBlob(null);
+      setDuration(0);
       setState('requesting');
+
       streamRef.current = stream;
       const mimeType = getSupportedMimeType();
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+      });
+
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' });
+        const blob = new Blob(chunksRef.current, {
+          type: mimeType || 'audio/mp4',
+        });
+        setAudioBlob(blob);
+        setState('done');
         cleanup();
-        setState('idle');
-        if (onBlobReady) onBlobReady(blob);
       };
 
       recorder.onerror = (e) => {
-        setError('Recording error: ' + (e.error?.message || 'unknown'));
+        setError('Recording error: ' + e.error?.message);
         setState('error');
         cleanup();
       };
 
       mediaRecorderRef.current = recorder;
-      recorder.start(250);
+      recorder.start(250); // Collect chunks every 250ms
+
       startTimeRef.current = Date.now();
       setState('recording');
 
+      // Duration timer
       timerRef.current = setInterval(() => {
         setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 1000);
-
     } catch (err) {
       let message = 'Microphone access denied';
-      if (err.name === 'NotAllowedError') message = 'Microphone permission denied. Please allow microphone access.';
-      else if (err.name === 'NotFoundError') message = 'No microphone found on this device.';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        message = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+      } else if (err.name === 'NotFoundError') {
+        message = 'No microphone found on this device.';
+      }
       setError(message);
       setState('error');
       cleanup();
     }
-  }, [cleanup, onBlobReady]);
+  }, [cleanup]);
 
   const stop = useCallback(() => {
     if (mediaRecorderRef.current && state === 'recording') {
@@ -103,14 +143,16 @@ export function useVoiceRecorder(onBlobReady) {
       try { mediaRecorderRef.current.stop(); } catch (_) {}
     }
     cleanup();
+    setAudioBlob(null);
     setState('idle');
   }, [cleanup]);
 
   const reset = useCallback(() => {
+    setAudioBlob(null);
     setError(null);
     setDuration(0);
     setState('idle');
   }, []);
 
-  return { state, error, duration, start, stop, cancel, reset };
+  return { state, audioBlob, error, duration, start, stop, cancel, reset };
 }

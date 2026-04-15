@@ -17,12 +17,12 @@ export default function App() {
     if (isRecoveryUrl) {
       setIsRecovery(true);
       setSession(null);
-      return;
+      // DON'T return — fall through so the auth listener still gets set up
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+      });
     }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {

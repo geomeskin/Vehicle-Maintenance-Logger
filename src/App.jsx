@@ -39,6 +39,8 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  console.log('state:', { session, isRecovery });
+  
   if (session === undefined) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a', color: '#444', fontSize: '13px' }}>

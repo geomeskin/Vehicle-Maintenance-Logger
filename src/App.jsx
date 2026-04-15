@@ -17,7 +17,6 @@ export default function App() {
     if (isRecoveryUrl) {
       setIsRecovery(true);
       setSession(null);
-      // DON'T return — fall through so the auth listener still gets set up
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
@@ -25,11 +24,13 @@ export default function App() {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('auth event:', event, session);
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
         setSession(session);
-      } else if (event === 'SIGNED_IN') {
+      } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(session);
+        // deliberately NOT clearing isRecovery here
       } else {
         setIsRecovery(false);
         setSession(session);
@@ -39,8 +40,6 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  console.log('state:', { session, isRecovery });
-  
   if (session === undefined) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a', color: '#444', fontSize: '13px' }}>

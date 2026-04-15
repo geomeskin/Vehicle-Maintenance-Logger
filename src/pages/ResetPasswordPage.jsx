@@ -8,6 +8,7 @@ export default function ResetPasswordPage({ onDone }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  
   async function handleReset(e) {
     e.preventDefault();
     if (password !== confirm) {

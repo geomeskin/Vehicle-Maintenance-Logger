@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import LoginPage from './pages/LoginPage.jsx';
@@ -8,6 +7,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 export default function App() {
   const [session, setSession] = useState(undefined);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -15,6 +15,10 @@ export default function App() {
     const isRecoveryUrl = hash.includes('type=recovery') || params.get('recovery') === '1';
 
     if (isRecoveryUrl) {
+      // Grab email BEFORE clearing session
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user?.email) setRecoveryEmail(user.email);
+      });
       setIsRecovery(true);
       setSession(null);
     } else {
@@ -30,7 +34,6 @@ export default function App() {
         setSession(session);
       } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(session);
-        // deliberately NOT clearing isRecovery here
       } else {
         setIsRecovery(false);
         setSession(session);
@@ -49,7 +52,7 @@ export default function App() {
   }
 
   if (isRecovery) {
-    return <ResetPasswordPage onDone={() => {
+    return <ResetPasswordPage email={recoveryEmail} onDone={() => {
       setIsRecovery(false);
       window.history.replaceState({}, '', window.location.pathname);
     }} />;

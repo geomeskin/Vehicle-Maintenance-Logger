@@ -1,20 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabase';
 
-export default function ResetPasswordPage({ onDone }) {
-  const [email, setEmail] = useState('');
+export default function ResetPasswordPage({ onDone, email }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-
-  // Grab email immediately on mount while session is still valid
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setEmail(user.email);
-    });
-  }, []);
 
   async function handleReset(e) {
     e.preventDefault();
@@ -81,7 +73,7 @@ export default function ResetPasswordPage({ onDone }) {
 
         {success ? (
           <div style={{
-            background: '##1a2e1a',
+            background: '#1a2e1a',
             border: '1px solid #2a4a2a',
             borderRadius: '12px',
             padding: '20px',

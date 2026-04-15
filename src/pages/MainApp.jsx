@@ -156,18 +156,18 @@ export default function MainApp({ session }) {
 
       {showSetPassword && <SetPasswordModal onClose={() => setShowSetPassword(false)} />}
 
-      {vehicleError && (
-        <div style={{
-          background: '#1a0a0a',
-          border: '1px solid #f87171',
-          color: '#f87171',
-          fontSize: '11px',
-          padding: '8px 16px',
-          flexShrink: 0,
-        }}>
-          Vehicle load error: {vehicleError}
-        </div>
-      )}
+<div style={{
+  background: '#1a0a0a',
+  border: '1px solid #444',
+  color: '#aaa',
+  fontSize: '11px',
+  padding: '8px 16px',
+  flexShrink: 0,
+}}>
+  session: {session ? 'YES' : 'NO'} |
+  vehicles: {vehicles.length} |
+  {vehicleError ? `error: ${vehicleError}` : 'no error'}
+</div>
 
       <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: 'var(--accent)', letterSpacing: '-0.01em' }}>

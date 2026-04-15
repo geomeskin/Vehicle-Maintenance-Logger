@@ -10,32 +10,35 @@ export default function App() {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    // Check URL for recovery token — hash (real email link) or query param (dev test)
-    const hash = window.location.hash;
-    const params = new URLSearchParams(window.location.search);
-    if (hash.includes('type=recovery') || params.get('recovery') === '1') {
+  const hash = window.location.hash;
+  const params = new URLSearchParams(window.location.search);
+  const isRecoveryUrl = hash.includes('type=recovery') || params.get('recovery') === '1';
+  
+  if (isRecoveryUrl) {
+    setIsRecovery(true);
+    // Don't call getSession yet — show the form immediately
+    setSession(null);
+    return;
+  }
+
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+  });
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
       setIsRecovery(true);
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-    });
+    } else if (event === 'SIGNED_IN') {
+      setSession(session);
+    } else {
+      setIsRecovery(false);
+      setSession(session);
+    }
+  });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
-        setSession(session);
-      } else if (event === 'SIGNED_IN') {
-        setSession(session);
-        // deliberately NOT clearing isRecovery here
-      } else {
-        setIsRecovery(false);
-        setSession(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  return () => subscription.unsubscribe();
+}, []);
 
   if (session === undefined) {
     return (

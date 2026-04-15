@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import LoginPage from './pages/LoginPage.jsx';
@@ -9,6 +10,13 @@ export default function App() {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
+    // Check URL hash for recovery token BEFORE calling getSession
+    // Catches mobile cold-start where PASSWORD_RECOVERY event fires too late
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      setIsRecovery(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });

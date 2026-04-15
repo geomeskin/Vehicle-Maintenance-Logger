@@ -10,10 +10,10 @@ export default function App() {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    // Check URL hash for recovery token BEFORE calling getSession
-    // Catches mobile cold-start where PASSWORD_RECOVERY event fires too late
+    // Check URL for recovery token — hash (real email link) or query param (dev test)
     const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
+    const params = new URLSearchParams(window.location.search);
+    if (hash.includes('type=recovery') || params.get('recovery') === '1') {
       setIsRecovery(true);
     }
 

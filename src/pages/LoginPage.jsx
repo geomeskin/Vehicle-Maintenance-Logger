@@ -233,25 +233,26 @@ export default function LoginPage() {
           </form>
         )}
       </div>
-{/* DEV ONLY — remove before sharing with users */}
-<button
-  type="button"
-  onClick={() => {
-    alert('hash: ' + window.location.hash);
-  }}
-  style={{
-    marginTop: '2rem',
-    background: 'none',
-    border: 'none',
-    color: '#333',
-    fontSize: '0.7rem',
-    cursor: 'pointer',
-    textAlign: 'center',
-    width: '100%',
-  }}
->
-  [dev] check hash
-</button>
+      {/* DEV ONLY — remove before sharing with users */}
+      <button
+        type="button"
+        onClick={() => {
+          window.location.href = window.location.origin + '?recovery=1';
+        }}
+        style={{
+          marginTop: '2rem',
+          background: 'none',
+          border: 'none',
+          color: '#333',
+          fontSize: '0.7rem',
+          cursor: 'pointer',
+          textAlign: 'center',
+          width: '100%',
+        }}
+      >
+        [dev] test reset form
+      </button>
+
     </div>
   );
 }

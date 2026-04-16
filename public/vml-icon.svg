@@ -1,34 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 680 680" role="img">
+  <title>VML Logo — gas pump with crossed wrenches</title>
+  <desc>Black circular icon with yellow-green gas pump and dark crossed wrenches with thin hex box ends</desc>
 
-  <!-- WRENCH (top-left to bottom-right) -->
-  <g stroke="#e8ff47" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Handle -->
-    <line x1="155" y1="390" x2="335" y2="210" stroke-width="36"/>
-    <!-- Head ring -->
-    <circle cx="370" cy="175" r="62" fill="none" stroke-width="36"/>
-    <!-- Jaw gap filled with bg to create open wrench -->
-    <path d="M 370 113 L 310 155 L 310 195 L 370 237" stroke="#0a0a0a" stroke-width="40" fill="none"/>
-    <!-- Tail end cap -->
-    <circle cx="138" cy="407" r="22" fill="#e8ff47" stroke="none"/>
+  <style>
+    .bg { fill: #0a0a0a; }
+    .ring { fill: none; stroke: #c8f135; stroke-width: 6; }
+    .pump { fill: #c8f135; }
+    .pump-dark { fill: #0a0a0a; }
+    .pump-shadow { fill: #8fb020; }
+    .wr { fill: #4a6010; stroke: #c8f135; stroke-width: 2; }
+    .wr-cut { fill: #0a0a0a; stroke: none; }
+    .wr-light { fill: #6a8018; }
+  </style>
+
+  <circle cx="340" cy="340" r="310" class="bg"/>
+  <circle cx="340" cy="340" r="310" class="ring"/>
+
+  <!-- Gas pump body -->
+  <rect x="255" y="190" width="160" height="235" rx="14" class="pump"/>
+  <rect x="273" y="210" width="124" height="68" rx="6" class="pump-dark"/>
+  <rect x="277" y="214" width="56" height="60" rx="4" class="pump-shadow"/>
+  <rect x="276" y="292" width="52" height="48" rx="4" class="pump-dark"/>
+  <rect x="342" y="292" width="52" height="48" rx="4" class="pump-dark"/>
+  <rect x="240" y="420" width="190" height="18" rx="6" class="pump-shadow"/>
+  <rect x="397" y="190" width="16" height="78" rx="6" class="pump"/>
+  <rect x="397" y="190" width="68" height="16" rx="6" class="pump"/>
+  <rect x="442" y="172" width="28" height="48" rx="7" class="pump-dark"/>
+  <path d="M405 268 Q422 305 438 297" fill="none" stroke="#8fb020" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- Wrench 1: rotated -42deg -->
+  <g transform="translate(340,355) rotate(-42)">
+    <circle cx="0" cy="-122" r="46" class="wr"/>
+    <polygon points="0,-94 28,-107 28,-137 0,-150 -28,-137 -28,-107" class="wr-cut"/>
+    <rect x="-14" y="-78" width="28" height="168" rx="12" class="wr"/>
+    <rect x="-36" y="90" width="72" height="20" rx="4" class="wr"/>
+    <rect x="-36" y="90" width="20" height="58" rx="4" class="wr"/>
+    <rect x="16" y="90" width="20" height="58" rx="4" class="wr"/>
+    <polygon points="-16,108 -9,114 -9,134 -16,140" class="wr-light"/>
+    <polygon points="16,108 9,114 9,134 16,140" class="wr-light"/>
   </g>
 
-  <!-- GAS PUMP NOZZLE (top-right to bottom-left) -->
-  <g stroke="#e8ff47" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Barrel -->
-    <line x1="357" y1="390" x2="177" y2="210" stroke-width="36"/>
-    <!-- Hose curl at top-right -->
-    <path d="M 177 210 Q 130 160 165 120 Q 200 80 245 110" fill="none" stroke-width="28"/>
-    <!-- Trigger -->
-    <line x1="310" y1="320" x2="348" y2="358" stroke-width="22"/>
-    <line x1="310" y1="320" x2="276" y2="320" stroke-width="22"/>
-    <!-- Nozzle tip at bottom-left -->
-    <line x1="357" y1="390" x2="395" y2="390" stroke-width="36"/>
-    <line x1="395" y1="370" x2="395" y2="415" stroke-width="30"/>
-    <circle cx="374" cy="407" r="14" fill="#e8ff47" stroke="none"/>
+  <!-- Wrench 2: rotated +42deg -->
+  <g transform="translate(340,355) rotate(42)">
+    <circle cx="0" cy="-122" r="46" class="wr"/>
+    <polygon points="0,-94 28,-107 28,-137 0,-150 -28,-137 -28,-107" class="wr-cut"/>
+    <rect x="-14" y="-78" width="28" height="168" rx="12" class="wr"/>
+    <rect x="-36" y="90" width="72" height="20" rx="4" class="wr"/>
+    <rect x="-36" y="90" width="20" height="58" rx="4" class="wr"/>
+    <rect x="16" y="90" width="20" height="58" rx="4" class="wr"/>
+    <polygon points="-16,108 -9,114 -9,134 -16,140" class="wr-light"/>
+    <polygon points="16,108 9,114 9,134 16,140" class="wr-light"/>
   </g>
 
-  <!-- Center cross dot -->
-  <circle cx="256" cy="295" r="18" fill="#0a0a0a"/>
-  <circle cx="256" cy="295" r="9" fill="#e8ff47"/>
 </svg>

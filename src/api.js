@@ -49,8 +49,17 @@ export async function fetchVehicles() {
   return vehicles;
 }
 
-// Uses cursor-based pagination via `before` (ISO timestamp).
-// Pass result.nextCursor as `before` to fetch the next page.
+export async function createVehicle(fields) {
+  const headers = await authHeaders();
+  const res = await fetch('/api/vehicles', {
+    method: 'POST', headers,
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) throw new Error('Failed to create vehicle');
+  const { vehicle } = await res.json();
+  return vehicle;
+}
+
 export async function fetchLogs({ vehicleId, type = 'all', limit = 20, before = null }) {
   const headers = await authHeaders();
   const params = new URLSearchParams({ vehicleId, type, limit });

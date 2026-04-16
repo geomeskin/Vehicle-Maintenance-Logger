@@ -129,5 +129,6 @@ export async function saveMaintenanceLog({ vehicleId, category, description, mil
     body: JSON.stringify({ vehicleId, category, description, mileage, cost, shopName, notes }),
   });
   if (!res.ok) throw new Error('Failed to save log');
-  return res.json();
+  const { log } = await res.json(); // ← fix: destructure log not data
+  return log;
 }

@@ -31,6 +31,8 @@ export default async function handler(req, res) {
 
   const supabase = getSupabase(authHeader);
 
+  const loggedAt = new Date().toISOString();
+
   const { data, error } = await supabase
     .from('maintenance_logs')
     .insert({
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
       cost: cost ? parseFloat(cost) : null,
       shop_name: shopName || null,
       notes: notes || null,
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
     })
     .select()
     .single();
@@ -56,5 +58,11 @@ export default async function handler(req, res) {
     });
   }
 
-  return res.status(201).json({ log: { ...data, logType: 'maintenance' } });
+  // Return full log object with logType so LogCard renders correctly
+  return res.status(201).json({
+    log: {
+      ...data,
+      logType: 'maintenance',
+    }
+  });
 }

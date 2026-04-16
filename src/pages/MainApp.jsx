@@ -85,15 +85,12 @@ function SetPasswordModal({ onClose }) {
   );
 }
 
-// ── Service Intervals Modal ────────────────────────────────────────────────
 function ServiceIntervalsModal({ vehicle, onClose }) {
   const [intervals, setIntervals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-
-  // Oil change form state
   const [oilInterval, setOilInterval] = useState('');
   const [oilWarning, setOilWarning] = useState('');
 
@@ -134,23 +131,14 @@ function ServiceIntervalsModal({ vehicle, onClose }) {
   }
 
   const inputStyle = {
-    width: '100%',
-    padding: '12px 14px',
-    background: '#111',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    outline: 'none',
+    width: '100%', padding: '12px 14px', background: '#111',
+    border: '1px solid #333', borderRadius: '8px', color: '#fff',
+    fontSize: '16px', boxSizing: 'border-box', outline: 'none',
   };
 
   const labelStyle = {
-    fontSize: '11px',
-    color: 'var(--text3)',
-    letterSpacing: '0.08em',
-    display: 'block',
-    marginBottom: '6px',
+    fontSize: '11px', color: 'var(--text3)',
+    letterSpacing: '0.08em', display: 'block', marginBottom: '6px',
   };
 
   return (
@@ -161,13 +149,10 @@ function ServiceIntervalsModal({ vehicle, onClose }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         <p style={{ color: '#666', fontSize: '13px', margin: '0 0 20px' }}>{vehicle.name}</p>
-
         {loading ? (
           <div style={{ color: 'var(--text3)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>Loading...</div>
         ) : (
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Oil Change */}
             <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '16px' }}>
               <div style={{ fontSize: '12px', color: 'var(--accent)', letterSpacing: '0.08em', fontWeight: '600', marginBottom: '14px' }}>
                 🛢 OIL CHANGE
@@ -175,65 +160,23 @@ function ServiceIntervalsModal({ vehicle, onClose }) {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>CHANGE EVERY (MI)</label>
-                  <input
-                    type="number"
-                    placeholder="10000"
-                    value={oilInterval}
-                    onChange={e => setOilInterval(e.target.value)}
-                    min="100"
-                    max="99999"
-                    style={inputStyle}
-                  />
+                  <input type="number" placeholder="10000" value={oilInterval} onChange={e => setOilInterval(e.target.value)} min="100" max="99999" style={inputStyle} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>WARN AT (MI)</label>
-                  <input
-                    type="number"
-                    placeholder={oilInterval ? Math.round(parseInt(oilInterval) * 0.8).toString() : '8000'}
-                    value={oilWarning}
-                    onChange={e => setOilWarning(e.target.value)}
-                    min="100"
-                    max="99999"
-                    style={inputStyle}
-                  />
+                  <input type="number" placeholder={oilInterval ? Math.round(parseInt(oilInterval) * 0.8).toString() : '8000'} value={oilWarning} onChange={e => setOilWarning(e.target.value)} min="100" max="99999" style={inputStyle} />
                 </div>
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '8px' }}>
                 Leave "Warn At" blank to default to 80% of interval
               </div>
             </div>
-
-            {/* Placeholder for future service types */}
             <div style={{ background: '#0f0f0f', border: '1px dashed #2a2a2a', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.06em' }}>
-                More service types coming soon
-              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.06em' }}>More service types coming soon</div>
             </div>
-
-            {error && (
-              <div style={{ background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: '8px', padding: '10px 14px', color: 'var(--red)', fontSize: '12px' }}>
-                {error}
-              </div>
-            )}
-            {success && (
-              <div style={{ background: '#0a1a0a', border: '1px solid var(--green)', borderRadius: '8px', padding: '10px 14px', color: 'var(--green)', fontSize: '12px' }}>
-                ✓ {success}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={saving || !oilInterval}
-              style={{
-                padding: '13px',
-                background: saving || !oilInterval ? '#333' : 'var(--accent)',
-                color: saving || !oilInterval ? '#666' : '#0a0a0a',
-                border: 'none', borderRadius: '8px',
-                fontSize: '14px', fontWeight: '700',
-                cursor: saving || !oilInterval ? 'default' : 'pointer',
-                letterSpacing: '0.05em',
-              }}
-            >
+            {error && <div style={{ background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: '8px', padding: '10px 14px', color: 'var(--red)', fontSize: '12px' }}>{error}</div>}
+            {success && <div style={{ background: '#0a1a0a', border: '1px solid var(--green)', borderRadius: '8px', padding: '10px 14px', color: 'var(--green)', fontSize: '12px' }}>✓ {success}</div>}
+            <button type="submit" disabled={saving || !oilInterval} style={{ padding: '13px', background: saving || !oilInterval ? '#333' : 'var(--accent)', color: saving || !oilInterval ? '#666' : '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: saving || !oilInterval ? 'default' : 'pointer', letterSpacing: '0.05em' }}>
               {saving ? 'SAVING...' : 'SAVE INTERVALS'}
             </button>
           </form>
@@ -243,7 +186,6 @@ function ServiceIntervalsModal({ vehicle, onClose }) {
   );
 }
 
-// ── Add Vehicle Screen ─────────────────────────────────────────────────────
 function AddVehicleScreen({ onVehicleAdded }) {
   const [name, setName] = useState('');
   const [make, setMake] = useState('');
@@ -256,23 +198,14 @@ function AddVehicleScreen({ onVehicleAdded }) {
   const [error, setError] = useState(null);
 
   const inputStyle = {
-    width: '100%',
-    padding: '12px 14px',
-    background: '#111',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    outline: 'none',
+    width: '100%', padding: '12px 14px', background: '#111',
+    border: '1px solid #333', borderRadius: '8px', color: '#fff',
+    fontSize: '16px', boxSizing: 'border-box', outline: 'none',
   };
 
   const labelStyle = {
-    fontSize: '11px',
-    color: 'var(--text3)',
-    letterSpacing: '0.08em',
-    display: 'block',
-    marginBottom: '6px',
+    fontSize: '11px', color: 'var(--text3)',
+    letterSpacing: '0.08em', display: 'block', marginBottom: '6px',
   };
 
   async function handleSubmit(e) {
@@ -289,8 +222,6 @@ function AddVehicleScreen({ onVehicleAdded }) {
         current_mileage: mileage ? parseInt(mileage) : 0,
       });
       setDefaultVehicleId(vehicle.id);
-
-      // Save oil change interval if provided
       if (oilInterval) {
         await saveServiceInterval({
           vehicle_id: vehicle.id,
@@ -299,7 +230,6 @@ function AddVehicleScreen({ onVehicleAdded }) {
           warning_threshold_miles: oilWarning ? parseInt(oilWarning) : null,
         });
       }
-
       onVehicleAdded(vehicle);
     } catch (err) {
       setError(err.message);
@@ -310,32 +240,14 @@ function AddVehicleScreen({ onVehicleAdded }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', overflowY: 'auto' }}>
       <div style={{ width: '100%', maxWidth: '380px' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', color: 'var(--accent)', letterSpacing: '-0.02em', marginBottom: '8px' }}>
-          VML
-        </div>
-        <h2 style={{ color: 'var(--text)', fontSize: '20px', fontWeight: '700', margin: '0 0 6px' }}>
-          Add your first vehicle
-        </h2>
-        <p style={{ color: 'var(--text3)', fontSize: '13px', margin: '0 0 28px' }}>
-          You can add more vehicles and adjust settings later.
-        </p>
-
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', color: 'var(--accent)', letterSpacing: '-0.02em', marginBottom: '8px' }}>VML</div>
+        <h2 style={{ color: 'var(--text)', fontSize: '20px', fontWeight: '700', margin: '0 0 6px' }}>Add your first vehicle</h2>
+        <p style={{ color: 'var(--text3)', fontSize: '13px', margin: '0 0 28px' }}>You can add more vehicles and adjust settings later.</p>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-          {/* Nickname */}
           <div>
             <label style={labelStyle}>NICKNAME <span style={{ color: 'var(--red)' }}>*</span></label>
-            <input
-              type="text"
-              placeholder={`e.g. "Blue Truck" or "Wifes Car"`}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-              style={inputStyle}
-            />
+            <input type="text" placeholder={`e.g. "Blue Truck" or "Wifes Car"`} value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
           </div>
-
-          {/* Make / Model */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
               <label style={labelStyle}>MAKE</label>
@@ -346,8 +258,6 @@ function AddVehicleScreen({ onVehicleAdded }) {
               <input type="text" placeholder="F-150" value={model} onChange={e => setModel(e.target.value)} style={inputStyle} />
             </div>
           </div>
-
-          {/* Year / Mileage */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
               <label style={labelStyle}>YEAR</label>
@@ -358,62 +268,22 @@ function AddVehicleScreen({ onVehicleAdded }) {
               <input type="number" placeholder="47000" value={mileage} onChange={e => setMileage(e.target.value)} min="0" style={inputStyle} />
             </div>
           </div>
-
-          {/* Oil Change Interval */}
           <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '14px', marginTop: '4px' }}>
-            <div style={{ fontSize: '12px', color: 'var(--accent)', letterSpacing: '0.08em', fontWeight: '600', marginBottom: '12px' }}>
-              🛢 OIL CHANGE INTERVAL
-            </div>
+            <div style={{ fontSize: '12px', color: 'var(--accent)', letterSpacing: '0.08em', fontWeight: '600', marginBottom: '12px' }}>🛢 OIL CHANGE INTERVAL</div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>CHANGE EVERY (MI)</label>
-                <input
-                  type="number"
-                  placeholder="5000"
-                  value={oilInterval}
-                  onChange={e => setOilInterval(e.target.value)}
-                  min="100"
-                  max="99999"
-                  style={inputStyle}
-                />
+                <input type="number" placeholder="5000" value={oilInterval} onChange={e => setOilInterval(e.target.value)} min="100" max="99999" style={inputStyle} />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>WARN AT (MI)</label>
-                <input
-                  type="number"
-                  placeholder={oilInterval ? Math.round(parseInt(oilInterval) * 0.8).toString() : '4000'}
-                  value={oilWarning}
-                  onChange={e => setOilWarning(e.target.value)}
-                  min="100"
-                  max="99999"
-                  style={inputStyle}
-                />
+                <input type="number" placeholder={oilInterval ? Math.round(parseInt(oilInterval) * 0.8).toString() : '4000'} value={oilWarning} onChange={e => setOilWarning(e.target.value)} min="100" max="99999" style={inputStyle} />
               </div>
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '8px' }}>
-              Leave "Warn At" blank to default to 80% of interval
-            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '8px' }}>Leave "Warn At" blank to default to 80% of interval</div>
           </div>
-
-          {error && (
-            <div style={{ background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: '8px', padding: '10px 14px', color: 'var(--red)', fontSize: '12px' }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !name.trim()}
-            style={{
-              marginTop: '8px', padding: '14px',
-              background: loading || !name.trim() ? '#333' : 'var(--accent)',
-              color: loading || !name.trim() ? '#666' : '#0a0a0a',
-              border: 'none', borderRadius: '8px',
-              fontSize: '15px', fontWeight: '700',
-              cursor: loading || !name.trim() ? 'default' : 'pointer',
-              letterSpacing: '0.05em',
-            }}
-          >
+          {error && <div style={{ background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: '8px', padding: '10px 14px', color: 'var(--red)', fontSize: '12px' }}>{error}</div>}
+          <button type="submit" disabled={loading || !name.trim()} style={{ marginTop: '8px', padding: '14px', background: loading || !name.trim() ? '#333' : 'var(--accent)', color: loading || !name.trim() ? '#666' : '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '700', cursor: loading || !name.trim() ? 'default' : 'pointer', letterSpacing: '0.05em' }}>
             {loading ? 'SAVING...' : 'ADD VEHICLE'}
           </button>
         </form>
@@ -422,7 +292,6 @@ function AddVehicleScreen({ onVehicleAdded }) {
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
 export default function MainApp({ session }) {
   const [tab, setTab] = useState('log');
   const [vehicles, setVehicles] = useState([]);
@@ -503,6 +372,12 @@ export default function MainApp({ session }) {
             SET PW
           </button>
           <button
+            onClick={() => window.location.href = 'mailto:da.meskin@gmail.com?subject=VML%20App%20Help'}
+            style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
+          >
+            HELP
+          </button>
+          <button
             onClick={() => supabase.auth.signOut()}
             style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
           >
@@ -538,14 +413,7 @@ export default function MainApp({ session }) {
           <button
             key={id}
             onClick={() => setTab(id)}
-            style={{
-              flex: 1, padding: '12px 8px 10px',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '3px',
-              background: 'none', border: 'none',
-              color: tab === id ? 'var(--accent)' : 'var(--text3)',
-              transition: 'color 0.15s',
-            }}
+            style={{ flex: 1, padding: '12px 8px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: tab === id ? 'var(--accent)' : 'var(--text3)', transition: 'color 0.15s' }}
           >
             <Icon active={tab === id} />
             <span style={{ fontSize: '9px', letterSpacing: '0.1em' }}>{label}</span>
@@ -555,4 +423,3 @@ export default function MainApp({ session }) {
     </div>
   );
 }
-

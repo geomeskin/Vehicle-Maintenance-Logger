@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 
 async function authHeaders() {
@@ -112,4 +113,12 @@ export async function deleteServiceInterval(vehicleId, serviceType) {
   });
   if (!res.ok) throw new Error('Failed to delete service interval');
   return res.json();
+}
+
+export async function fetchServiceStatus(vehicleId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/service-status?vehicleId=${vehicleId}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch service status');
+  const { status } = await res.json();
+  return status;
 }

@@ -85,3 +85,31 @@ export async function fetchStats(vehicleId) {
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
+
+export async function fetchServiceIntervals(vehicleId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/service-intervals?vehicleId=${vehicleId}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch service intervals');
+  const { intervals } = await res.json();
+  return intervals;
+}
+
+export async function saveServiceInterval({ vehicle_id, service_type, interval_miles, warning_threshold_miles }) {
+  const headers = await authHeaders();
+  const res = await fetch('/api/service-intervals', {
+    method: 'POST', headers,
+    body: JSON.stringify({ vehicle_id, service_type, interval_miles, warning_threshold_miles }),
+  });
+  if (!res.ok) throw new Error('Failed to save service interval');
+  const { interval } = await res.json();
+  return interval;
+}
+
+export async function deleteServiceInterval(vehicleId, serviceType) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/service-intervals?vehicleId=${vehicleId}&serviceType=${serviceType}`, {
+    method: 'DELETE', headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete service interval');
+  return res.json();
+}

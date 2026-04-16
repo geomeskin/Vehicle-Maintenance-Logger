@@ -16,12 +16,12 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
   const [lastResult, setLastResult] = useState(null);
   const [processingState, setProcessingState] = useState('idle');
   const [errorMsg, setErrorMsg] = useState(null);
+  const [voiceTrigger, setVoiceTrigger] = useState(null); // service item that triggered voice
 
   const selectedVehicleRef = useRef(null);
   const handleAudioReadyRef = useRef(null);
   const nextCursorRef = useRef(null);
 
-  // Keep ref in sync so callbacks always read the latest cursor
   useEffect(() => {
     nextCursorRef.current = nextCursor;
   }, [nextCursor]);
@@ -53,6 +53,14 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
       loadLogs(selectedVehicle, true);
     }
   }, [selectedVehicle?.id]);
+
+  // When a voice log is triggered from the status modal, start recording
+  useEffect(() => {
+    if (voiceTrigger && recorder.state === 'idle') {
+      recorder.start();
+      setVoiceTrigger(null);
+    }
+  }, [voiceTrigger, recorder.state]);
 
   async function handleAudioReady(blob) {
     const vehicle = selectedVehicleRef.current;
@@ -102,12 +110,18 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
     setEditingLog(null);
   }
 
+  function handleQuickLogSaved(log) {
+    // Prepend the new log to the list and show success
+    setLogs(prev => [log, ...prev]);
+    setLastResult({ logType: 'maintenance', parsed: log, needsReview: false });
+  }
+
   const uiState = getRecorderState();
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', maxWidth:'480px', margin:'0 auto', overflow:'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '480px', margin: '0 auto', overflow: 'hidden' }}>
 
-      <div style={{ padding:'14px 0', flexShrink:0 }}>
+      <div style={{ padding: '14px 0', flexShrink: 0 }}>
         {vehicles.length > 0
           ? <VehiclePicker
               vehicles={vehicles}
@@ -118,12 +132,18 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
                 setLastResult(null);
                 setNextCursor(null);
               }}
+              onVoiceLog={(item) => {
+                setLastResult(null);
+                setErrorMsg(null);
+                setVoiceTrigger(item);
+              }}
+              onQuickLogSaved={handleQuickLogSaved}
             />
-          : <div style={{ padding:'0 16px', fontSize:'12px', color:'var(--text3)' }}>Loading vehicles...</div>
+          : <div style={{ padding: '0 16px', fontSize: '12px', color: 'var(--text3)' }}>Loading vehicles...</div>
         }
       </div>
 
-      <div style={{ padding:'8px 16px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', flexShrink:0 }}>
+      <div style={{ padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
         <RecordButton
           recorderState={uiState}
           duration={recorder.duration}
@@ -132,29 +152,29 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
           disabled={!selectedVehicle}
         />
         {(errorMsg || recorder.error) && (
-          <div style={{ width:'100%', padding:'10px 14px', background:'#1a0a0a', border:'1px solid var(--red)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--red)' }}>
+          <div style={{ width: '100%', padding: '10px 14px', background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--red)' }}>
             {errorMsg || recorder.error}
           </div>
         )}
         {lastResult && !lastResult.needsReview && lastResult.parsed && (
-          <div style={{ width:'100%', padding:'10px 14px', background:'#0a1a0a', border:'1px solid var(--green)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--green)' }}>
+          <div style={{ width: '100%', padding: '10px 14px', background: '#0a1a0a', border: '1px solid var(--green)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--green)' }}>
             ✓ Saved as {lastResult.logType} log{lastResult.parsed.mileage ? ` — ${lastResult.parsed.mileage.toLocaleString()} mi` : ''}
           </div>
         )}
       </div>
 
       {lastResult?.needsReview && lastResult?.parsed && (
-        <div style={{ flexShrink:0, marginBottom:'12px' }}>
+        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
           <NeedsReviewBanner log={{ ...lastResult.parsed, logType: lastResult.logType }} onEdit={setEditingLog} />
         </div>
       )}
 
-      <div style={{ flex:1, overflowY:'auto', padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
-        <div style={{ fontSize:'10px', color:'var(--text3)', letterSpacing:'0.1em', textTransform:'uppercase', paddingBottom:'4px', borderBottom:'1px solid var(--border)', marginBottom:'4px', flexShrink:0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontSize: '10px', color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', paddingBottom: '4px', borderBottom: '1px solid var(--border)', marginBottom: '4px', flexShrink: 0 }}>
           Log History
         </div>
         {logs.length === 0 && !loadingLogs && (
-          <div style={{ textAlign:'center', padding:'40px 0', fontSize:'13px', color:'var(--text3)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: '13px', color: 'var(--text3)' }}>
             No logs yet. Record your first entry above.
           </div>
         )}
@@ -165,7 +185,7 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
           <button
             onClick={() => loadLogs(selectedVehicle, false)}
             disabled={loadingLogs}
-            style={{ padding:'12px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--text2)', letterSpacing:'0.05em' }}
+            style={{ padding: '12px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text2)', letterSpacing: '0.05em' }}
           >
             {loadingLogs ? 'LOADING...' : 'LOAD MORE'}
           </button>

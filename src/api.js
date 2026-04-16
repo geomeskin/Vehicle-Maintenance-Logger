@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 
 async function authHeaders() {
@@ -121,4 +120,14 @@ export async function fetchServiceStatus(vehicleId) {
   if (!res.ok) throw new Error('Failed to fetch service status');
   const { status } = await res.json();
   return status;
+}
+
+export async function saveMaintenanceLog({ vehicleId, category, description, mileage, cost, shopName, notes }) {
+  const headers = await authHeaders();
+  const res = await fetch('/api/logs/quick', {
+    method: 'POST', headers,
+    body: JSON.stringify({ vehicleId, category, description, mileage, cost, shopName, notes }),
+  });
+  if (!res.ok) throw new Error('Failed to save log');
+  return res.json();
 }

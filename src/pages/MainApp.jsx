@@ -179,7 +179,7 @@ function AddVehicleScreen({ onVehicleAdded }) {
             </label>
             <input
               type="text"
-              placeholder='e.g. "Blue Truck" or "Wife\'s Car"'
+              placeholder='e.g. "Blue Truck" or "Wifes Car"'
               value={name}
               onChange={e => setName(e.target.value)}
               required

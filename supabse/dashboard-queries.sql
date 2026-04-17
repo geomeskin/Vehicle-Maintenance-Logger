@@ -48,7 +48,7 @@ select
   lo.oil_change_cost,
   v.current_mileage - lo.oil_change_mileage as miles_since_oil_change,
   case
-    when v.current_mileage - lo.oil_change_mileage > 4500 then 'OVERDUE'
+    when v.current_mileage - lo.oil_change_mileage > 10000 then 'OVERDUE'
     when v.current_mileage - lo.oil_change_mileage > 3500 then 'DUE SOON'
     else 'OK'
   end as oil_status

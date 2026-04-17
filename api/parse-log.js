@@ -19,6 +19,10 @@
  *     parsed: object,           — the structured record as saved
  *     needsReview: boolean      — true if confidence was low
  *   }
+ *
+ * Rate limit (429):
+ *   { error: 'Max logs per day exceeded', limit: 10, current: number }
+ *   Max 10 logs per vehicle per calendar day. Resets at midnight local server time (UTC).
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -112,7 +116,30 @@ export default async function handler(req, res) {
 
   const supabase = getSupabase();
 
-  // ── 1. Save raw transcript immediately (so we never lose it) ──────────────
+  // ── 1. Rate limit — max 10 logs per vehicle per calendar day ──────────────
+  const DAILY_LOG_LIMIT = 10;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { count, error: countError } = await supabase
+    .from('raw_voice_logs')
+    .select('id', { count: 'exact', head: true })
+    .eq('vehicle_id', vehicleId)
+    .gte('created_at', todayStart.toISOString());
+
+  if (countError) {
+    console.error('Rate limit check failed:', countError);
+    // Fail open — don't block the user if the count query itself errors
+  } else if (count >= DAILY_LOG_LIMIT) {
+    return res.status(429).json({
+      error: 'Max logs per day exceeded',
+      detail: `This vehicle has reached the ${DAILY_LOG_LIMIT} log/day limit. Try again tomorrow.`,
+      limit: DAILY_LOG_LIMIT,
+      current: count,
+    });
+  }
+
+  // ── 2. Save raw transcript immediately (so we never lose it) ──────────────
   const { data: rawLog, error: rawError } = await supabase
     .from('raw_voice_logs')
     .insert({
@@ -130,7 +157,7 @@ export default async function handler(req, res) {
 
   const rawLogId = rawLog.id;
 
-  // ── 2. Call Claude to parse ────────────────────────────────────────────────
+  // ── 3. Call Claude to parse ────────────────────────────────────────────────
   let parsed;
   try {
     const userMessage = [
@@ -184,7 +211,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // ── 3. Save to the correct typed table ───────────────────────────────────
+  // ── 4. Save to the correct typed table ───────────────────────────────────
   const needsReview = parsed.confidence < 0.7 || parsed.logType === 'unknown';
   let savedRecord = null;
 
@@ -270,7 +297,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── 4. Update raw log with parse result ──────────────────────────────────
+  // ── 5. Update raw log with parse result ──────────────────────────────────
   await supabase
     .from('raw_voice_logs')
     .update({

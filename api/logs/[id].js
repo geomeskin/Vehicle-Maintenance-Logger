@@ -36,15 +36,16 @@ const FUEL_EDITABLE = [
 ];
 
 export default async function handler(req, res) {
-  if (req.method !== 'PATCH') {
+  if (req.method !== 'PATCH' && req.method !== 'DELETE') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { id } = req.query;
-  const { type, ...updates } = req.body;
+  const { id, type: queryType } = req.query;
+  const { type: bodyType, ...updates } = req.body || {};
+  const type = queryType || bodyType;
 
   if (!id || !type) {
     return res.status(400).json({ error: 'id and type are required' });
@@ -52,6 +53,13 @@ export default async function handler(req, res) {
 
   const supabase = getSupabase(authHeader);
   const table = type === 'fuel' ? 'fuel_logs' : 'maintenance_logs';
+
+  if (req.method === 'DELETE') {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ deleted: id });
+  }
+
   const allowedFields = type === 'fuel' ? FUEL_EDITABLE : MAINTENANCE_EDITABLE;
 
   // Strip any fields that aren't in the allowlist

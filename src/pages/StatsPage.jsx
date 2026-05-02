@@ -333,6 +333,13 @@ export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }
               <StatCard label="Total All Time" value={fmt$(stats.costs.total.allTime)} />
             </div>
 
+            {/* Gas spending - weekly and monthly */}
+            <SectionLabel>Gas Spending</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+              <StatCard label="This Week" value={fmt$(stats.costs.fuel.thisWeek)} />
+              <StatCard label="This Month" value={fmt$(stats.costs.fuel.thisMonth)} />
+            </div>
+
             {/* MPG */}
             {stats.mpg.data.length > 0 && (
               <div style={{ marginBottom: '12px' }}>

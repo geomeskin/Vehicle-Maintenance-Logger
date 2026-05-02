@@ -51,8 +51,9 @@ function formatCost(val) {
   return `$${Number(val).toFixed(2)}`;
 }
 
-export default function LogCard({ log, onEdit }) {
+export default function LogCard({ log, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isFuel = log.logType === 'fuel';
   const color = isFuel ? CATEGORY_COLORS.fuel : (CATEGORY_COLORS[log.category] || CATEGORY_COLORS.other);
   const label = isFuel ? 'Fuel' : (CATEGORY_LABELS[log.category] || 'Other');
@@ -174,23 +175,76 @@ export default function LogCard({ log, onEdit }) {
             </>
           )}
 
-          <button
-            onClick={() => onEdit(log)}
-            style={{
-              marginTop: '8px',
-              padding: '10px',
-              background: 'var(--bg3)',
-              border: '1px solid var(--border2)',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '12px',
-              color: 'var(--text2)',
-              letterSpacing: '0.05em',
-              width: '100%',
-              cursor: 'pointer',
-            }}
-          >
-            EDIT ENTRY
-          </button>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <button
+              onClick={() => onEdit(log)}
+              style={{
+                flex: 1,
+                padding: '10px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border2)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '12px',
+                color: 'var(--text2)',
+                letterSpacing: '0.05em',
+                cursor: 'pointer',
+              }}
+            >
+              EDIT
+            </button>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{
+                  padding: '10px 14px',
+                  background: 'var(--bg3)',
+                  border: '1px solid #ef444466',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '12px',
+                  color: '#ef4444',
+                  letterSpacing: '0.05em',
+                  cursor: 'pointer',
+                }}
+              >
+                DELETE
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => onDelete(log)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    background: '#1a0a0a',
+                    border: '1px solid #ef4444',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    fontWeight: '700',
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                  }}
+                >
+                  CONFIRM DELETE
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  style={{
+                    padding: '10px 14px',
+                    background: 'var(--bg3)',
+                    border: '1px solid var(--border2)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    color: 'var(--text2)',
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                  }}
+                >
+                  CANCEL
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

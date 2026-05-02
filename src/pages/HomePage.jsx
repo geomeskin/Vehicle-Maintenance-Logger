@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { transcribeAudio, parseLog, fetchLogs } from '../api';
+import { transcribeAudio, parseLog, fetchLogs, deleteLog } from '../api';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import VehiclePicker from '../components/VehiclePicker';
 import RecordButton from '../components/RecordButton';
@@ -110,6 +110,15 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
     setEditingLog(null);
   }
 
+  async function handleLogDeleted(log) {
+    try {
+      await deleteLog(log.id, log.logType);
+      setLogs(prev => prev.filter(l => !(l.id === log.id && l.logType === log.logType)));
+    } catch (err) {
+      setErrorMsg(err.message);
+    }
+  }
+
   function handleQuickLogSaved(log) {
     // Prepend the new log to the list and show success
     setLogs(prev => [log, ...prev]);
@@ -179,7 +188,7 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
           </div>
         )}
         {logs.map(log => (
-          <LogCard key={`${log.logType}-${log.id}`} log={log} onEdit={setEditingLog} />
+          <LogCard key={`${log.logType}-${log.id}`} log={log} onEdit={setEditingLog} onDelete={handleLogDeleted} />
         ))}
         {hasMore && (
           <button

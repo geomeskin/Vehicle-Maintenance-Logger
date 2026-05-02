@@ -9,6 +9,7 @@ async function authHeaders() {
   };
 }
 
+
 export async function transcribeAudio(audioBlob) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
@@ -66,6 +67,15 @@ export async function fetchLogs({ vehicleId, type = 'all', limit = 20, before = 
   if (before) params.set('before', before);
   const res = await fetch(`/api/logs?${params}`, { headers });
   if (!res.ok) throw new Error('Failed to fetch logs');
+  return res.json();
+}
+
+export async function deleteLog(id, type) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/logs/${id}?type=${type}`, {
+    method: 'DELETE', headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete log');
   return res.json();
 }
 

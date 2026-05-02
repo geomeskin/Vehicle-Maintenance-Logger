@@ -110,6 +110,19 @@ export default async function handler(req, res) {
     .filter(f => new Date(f.logged_at).getFullYear() === thisYear)
     .reduce((s, f) => s + Number(f.total_cost), 0);
 
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const totalFuelThisWeek = fuelCosts
+    .filter(f => new Date(f.logged_at) >= startOfWeek)
+    .reduce((s, f) => s + Number(f.total_cost), 0);
+  const totalFuelThisMonth = fuelCosts
+    .filter(f => new Date(f.logged_at) >= startOfMonth)
+    .reduce((s, f) => s + Number(f.total_cost), 0);
+
   // ── Cost by category ──────────────────────────────────────────────────────
   const categoryMap = {};
   maintenanceCosts.forEach(m => {
@@ -175,6 +188,8 @@ export default async function handler(req, res) {
       fuel: {
         allTime: Math.round(totalFuelAllTime * 100) / 100,
         thisYear: Math.round(totalFuelThisYear * 100) / 100,
+        thisWeek: Math.round(totalFuelThisWeek * 100) / 100,
+        thisMonth: Math.round(totalFuelThisMonth * 100) / 100,
       },
       total: {
         allTime: Math.round((totalMaintenanceAllTime + totalFuelAllTime) * 100) / 100,

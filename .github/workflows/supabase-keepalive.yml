@@ -5,17 +5,34 @@ on:
     - cron: '0 12 */5 * *'   # every 5 days at noon UTC
   workflow_dispatch:           # allow manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ping Supabase and record heartbeat
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lilsamzsvywofdpwrlts.supabase.co/health)
           echo "Supabase health check status: $STATUS"
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
-            echo "Project is alive."
-          else
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 500 ]; then
             echo "Unexpected status: $STATUS"
             exit 1
           fi
+          echo "Project is alive."
+
+          # GitHub auto-disables scheduled workflows after 60 days of no repo
+          # activity - a successful Actions run doesn't count, only commits
+          # do. Committing this heartbeat file keeps the repo "active" so
+          # this workflow (and the Supabase project it's keeping alive) never
+          # gets silently disabled again without manual intervention.
+          echo "Last successful ping: $(date -u +'%Y-%m-%dT%H:%M:%SZ') (HTTP $STATUS)" > .github/keepalive-last-ping.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive-last-ping.txt
+          git commit -m "chore: keep-alive heartbeat"
+          git push

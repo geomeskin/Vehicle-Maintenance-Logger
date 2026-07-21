@@ -1,0 +1,1 @@
+Last successful ping: manual reset 2026-07-21 (workflow updated to self-commit heartbeats going forward)

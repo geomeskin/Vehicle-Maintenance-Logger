@@ -9,7 +9,10 @@
  *     transcript: string,       — raw text from Whisper
  *     vehicleId: string,        — UUID of selected vehicle
  *     vehicleName: string,      — e.g. "Blue Truck" (helps Claude with context)
- *     currentMileage: number    — last known odometer (helps Claude fill gaps)
+ *     currentMileage: number,   — last known odometer (helps Claude fill gaps)
+ *     vehicles: [{id, name}]    — full vehicle roster, so a spoken correction like
+ *                                  "in Leanne's car" can actually be routed there
+ *                                  instead of just noted and silently mis-saved
  *   }
  *
  * Response:
@@ -17,7 +20,9 @@
  *     rawLogId: string,
  *     logType: 'maintenance' | 'fuel' | 'unknown',
  *     parsed: object,           — the structured record as saved
- *     needsReview: boolean      — true if confidence was low
+ *     needsReview: boolean,     — true if confidence was low
+ *     resolvedVehicleId: string,    — vehicle the entry actually saved under
+ *     vehicleReassigned: boolean    — true if that differs from the selected vehicleId
  *   }
  *
  * Rate limit (429):
@@ -98,7 +103,16 @@ Rules:
 - If they say "full tank" or "filled it up", set full_tank: true
 - If they mention a next oil change like "next change at 50k" or "in 3,000 miles", calculate next_service_mileage
 - Be generous with partial info — fill what you can, null the rest
-- confidence < 0.7 means you're guessing significantly; the app will flag it for review`;
+- confidence < 0.7 means you're guessing significantly; the app will flag it for review
+
+Vehicle attribution:
+- The user has a "selected" vehicle shown in the prompt below, but sometimes the
+  transcript explicitly names a DIFFERENT vehicle from their roster (e.g. selected
+  vehicle is "Alex's Truck" but they say "in Leanne's car, we got...").
+- In that case, add a top-level field "mentionedVehicle" set to that vehicle's exact
+  name as given in the roster. Otherwise omit "mentionedVehicle" or set it null.
+- Only set it when a roster vehicle is clearly and explicitly named — don't guess from
+  ambiguous pronouns ("my car", "it") or from fuel-type hints alone.`;
 
 // ============================================================
 // HANDLER
@@ -108,11 +122,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { transcript, vehicleId, vehicleName, currentMileage } = req.body;
+  const { transcript, vehicleId, vehicleName, currentMileage, vehicles } = req.body;
 
   if (!transcript || !vehicleId) {
     return res.status(400).json({ error: 'transcript and vehicleId are required' });
   }
+
+  const roster = Array.isArray(vehicles) ? vehicles : [];
 
   const supabase = getSupabase();
 
@@ -161,7 +177,8 @@ export default async function handler(req, res) {
   let parsed;
   try {
     const userMessage = [
-      `Vehicle: ${vehicleName}`,
+      `Selected vehicle: ${vehicleName}`,
+      roster.length > 1 ? `Vehicle roster: ${roster.map(v => v.name).join(', ')}` : '',
       currentMileage ? `Last known mileage: ${currentMileage.toLocaleString()}` : '',
       `Transcript: "${transcript}"`,
     ]
@@ -211,7 +228,22 @@ export default async function handler(req, res) {
     });
   }
 
-  // ── 4. Save to the correct typed table ───────────────────────────────────
+  // ── 4. Resolve which vehicle this actually belongs to ──────────────────────
+  // Claude flags a spoken correction (e.g. "in Leanne's car") via mentionedVehicle;
+  // match it against the real roster rather than trusting an LLM-generated id.
+  let resolvedVehicleId = vehicleId;
+  let vehicleReassigned = false;
+  if (parsed.mentionedVehicle) {
+    const match = roster.find(
+      v => v.name.toLowerCase() === String(parsed.mentionedVehicle).toLowerCase()
+    );
+    if (match && match.id !== vehicleId) {
+      resolvedVehicleId = match.id;
+      vehicleReassigned = true;
+    }
+  }
+
+  // ── 5. Save to the correct typed table ───────────────────────────────────
   const needsReview = parsed.confidence < 0.7 || parsed.logType === 'unknown';
   let savedRecord = null;
 
@@ -219,7 +251,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('maintenance_logs')
       .insert({
-        vehicle_id: vehicleId,
+        vehicle_id: resolvedVehicleId,
         raw_log_id: rawLogId,
         category: parsed.category ?? 'other',
         description: parsed.description ?? transcript.slice(0, 200),
@@ -253,7 +285,7 @@ export default async function handler(req, res) {
     // Update vehicle's current_mileage if this reading is higher
     if (parsed.mileage) {
       await supabase.rpc('update_vehicle_mileage_if_higher', {
-        p_vehicle_id: vehicleId,
+        p_vehicle_id: resolvedVehicleId,
         p_mileage: parsed.mileage,
       });
     }
@@ -261,7 +293,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('fuel_logs')
       .insert({
-        vehicle_id: vehicleId,
+        vehicle_id: resolvedVehicleId,
         raw_log_id: rawLogId,
         gallons: parsed.gallons,
         price_per_gallon: parsed.price_per_gallon,
@@ -291,19 +323,20 @@ export default async function handler(req, res) {
 
     if (parsed.mileage) {
       await supabase.rpc('update_vehicle_mileage_if_higher', {
-        p_vehicle_id: vehicleId,
+        p_vehicle_id: resolvedVehicleId,
         p_mileage: parsed.mileage,
       });
     }
   }
 
-  // ── 5. Update raw log with parse result ──────────────────────────────────
+  // ── 6. Update raw log with parse result ──────────────────────────────────
   await supabase
     .from('raw_voice_logs')
     .update({
       parsed_json: parsed,
       parse_status: needsReview ? 'corrected' : 'success',
       log_type: parsed.logType,
+      vehicle_id: resolvedVehicleId,
     })
     .eq('id', rawLogId);
 
@@ -312,5 +345,10 @@ export default async function handler(req, res) {
     logType: parsed.logType,
     parsed: savedRecord,
     needsReview,
+    resolvedVehicleId,
+    vehicleReassigned,
+    resolvedVehicleName: vehicleReassigned
+      ? roster.find(v => v.id === resolvedVehicleId)?.name
+      : vehicleName,
   });
 }

@@ -29,11 +29,11 @@ export async function transcribeAudio(audioBlob) {
   return transcript;
 }
 
-export async function parseLog({ transcript, vehicleId, vehicleName, currentMileage }) {
+export async function parseLog({ transcript, vehicleId, vehicleName, currentMileage, vehicles }) {
   const headers = await authHeaders();
   const res = await fetch('/api/parse-log', {
     method: 'POST', headers,
-    body: JSON.stringify({ transcript, vehicleId, vehicleName, currentMileage }),
+    body: JSON.stringify({ transcript, vehicleId, vehicleName, currentMileage, vehicles }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Parse failed' }));
@@ -93,6 +93,17 @@ export async function fetchStats(vehicleId) {
   const headers = await authHeaders();
   const res = await fetch(`/api/stats?vehicleId=${vehicleId}`, { headers });
   if (!res.ok) throw new Error('Failed to fetch stats');
+  return res.json();
+}
+
+export async function fetchDateRangeSummary({ vehicleId, startDate, endDate }) {
+  const headers = await authHeaders();
+  const params = new URLSearchParams({ vehicleId, startDate, endDate });
+  const res = await fetch(`/api/date-range-summary?${params}`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to fetch summary' }));
+    throw new Error(err.error || 'Failed to fetch summary');
+  }
   return res.json();
 }
 

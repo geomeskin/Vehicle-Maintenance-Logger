@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchStats } from '../api';
+import { fetchStats, fetchDateRangeSummary } from '../api';
 
 const STATUS_COLORS = {
   ok:           { bg: '#0a1a0a', border: '#22c55e', text: '#22c55e', label: 'OK' },
@@ -247,6 +247,100 @@ function generatePDF(stats, vehicle) {
   }, 500);
 }
 
+function DateRangeSummary({ vehicleId }) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setSummary(null);
+    setError(null);
+  }, [vehicleId]);
+
+  async function handleGetSummary() {
+    if (!startDate || !endDate) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchDateRangeSummary({ vehicleId, startDate, endDate });
+      setSummary(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const dateInputStyle = {
+    flex: 1, padding: '10px 12px', background: 'var(--bg)',
+    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    color: 'var(--text)', fontSize: '14px', boxSizing: 'border-box', outline: 'none',
+  };
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <SectionLabel>Date Range Summary</SectionLabel>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={dateInputStyle} />
+        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={dateInputStyle} />
+      </div>
+      <button
+        onClick={handleGetSummary}
+        disabled={!startDate || !endDate || loading}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          background: (!startDate || !endDate || loading) ? '#333' : 'var(--accent)',
+          color: (!startDate || !endDate || loading) ? '#666' : '#0a0a0a',
+          border: 'none', borderRadius: 'var(--radius)', fontSize: '12px',
+          fontWeight: '700', letterSpacing: '0.05em',
+          cursor: (!startDate || !endDate || loading) ? 'default' : 'pointer',
+        }}
+      >
+        {loading ? 'LOADING...' : 'GET SUMMARY'}
+      </button>
+
+      {error && (
+        <div style={{ padding: '10px 14px', background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--red)', marginBottom: '12px' }}>
+          {error}
+        </div>
+      )}
+
+      {summary && !loading && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+            <StatCard label="Fuel Cost" value={fmt$(summary.fuel.totalCost)} sub={`${summary.fuel.fillUps} fill-up${summary.fuel.fillUps === 1 ? '' : 's'}`} />
+            <StatCard label="Gallons" value={summary.fuel.totalGallons || '—'} sub={summary.fuel.avgPricePerGallon ? `avg $${summary.fuel.avgPricePerGallon}/gal` : ''} />
+            <StatCard label="Maintenance" value={fmt$(summary.maintenance.totalCost)} sub={`${summary.maintenance.entries.length} entr${summary.maintenance.entries.length === 1 ? 'y' : 'ies'}`} />
+            <StatCard label="Total" value={fmt$(summary.total)} color="var(--accent)" />
+          </div>
+
+          {summary.maintenance.byCategory.length > 0 && (
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+              {summary.maintenance.byCategory.map((cat, i) => (
+                <div key={cat.category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < summary.maintenance.byCategory.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text)', textTransform: 'capitalize' }}>{cat.category.replace('_', ' ')}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text3)' }}>{cat.count}x</div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{fmt$(cat.total)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {summary.fuel.fillUps === 0 && summary.maintenance.entries.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px 0', fontSize: '12px', color: 'var(--text3)' }}>
+              No entries in this date range
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -292,6 +386,8 @@ export default function StatsPage({ vehicles, selectedVehicle, onSelectVehicle }
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+        {selectedVehicle && <DateRangeSummary vehicleId={selectedVehicle.id} />}
+
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px', fontSize: '12px', color: 'var(--text3)' }}>
             Loading stats...

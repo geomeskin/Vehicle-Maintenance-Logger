@@ -76,11 +76,12 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
         vehicleId: vehicle.id,
         vehicleName: vehicle.name,
         currentMileage: vehicle.current_mileage,
+        vehicles: vehicles.map(v => ({ id: v.id, name: v.name })),
       });
       setLastResult(result);
       if (result.parsed) {
         await loadLogs(vehicle, true);
-        if (result.parsed.mileage && result.parsed.mileage > (vehicle.current_mileage || 0)) {
+        if (!result.vehicleReassigned && result.parsed.mileage && result.parsed.mileage > (vehicle.current_mileage || 0)) {
           const updated = { ...vehicle, current_mileage: result.parsed.mileage };
           onSelectVehicle(updated);
           selectedVehicleRef.current = updated;
@@ -168,6 +169,7 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
         {lastResult && !lastResult.needsReview && lastResult.parsed && (
           <div style={{ width: '100%', padding: '10px 14px', background: '#0a1a0a', border: '1px solid var(--green)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--green)' }}>
             ✓ Saved as {lastResult.logType} log{lastResult.parsed.mileage ? ` — ${lastResult.parsed.mileage.toLocaleString()} mi` : ''}
+            {lastResult.vehicleReassigned && ` — logged to ${lastResult.resolvedVehicleName} instead (you said a different vehicle than the one selected)`}
           </div>
         )}
       </div>

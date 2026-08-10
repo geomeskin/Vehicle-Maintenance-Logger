@@ -15,10 +15,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ping Supabase and record heartbeat
+      - name: Query Supabase and record heartbeat
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lilsamzsvywofdpwrlts.supabase.co/health)
-          echo "Supabase health check status: $STATUS"
+          # A plain /health ping only checks the edge network, not the database -
+          # it kept reporting success every run while Supabase paused the project
+          # anyway (found 2026-08-10). Supabase's inactivity timer tracks real
+          # database/API usage, so this queries an actual table through PostgREST
+          # instead. RLS means an anon key gets back an empty array rather than
+          # real rows - that's fine, a 200 here still means Postgres was touched.
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://lilsamzsvywofdpwrlts.supabase.co/rest/v1/vehicles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "Supabase table query status: $STATUS"
           if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 500 ]; then
             echo "Unexpected status: $STATUS"
             exit 1

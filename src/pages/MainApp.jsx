@@ -186,6 +186,89 @@ function ServiceIntervalsModal({ vehicle, onClose }) {
   );
 }
 
+function AddVehicleModal({ onClose, onVehicleAdded }) {
+  const [name, setName] = useState('');
+  const [make, setMake] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState('');
+  const [mileage, setMileage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const inputStyle = {
+    width: '100%', padding: '12px 14px', background: '#111',
+    border: '1px solid #333', borderRadius: '8px', color: '#fff',
+    fontSize: '16px', boxSizing: 'border-box', outline: 'none',
+  };
+
+  const labelStyle = {
+    fontSize: '11px', color: 'var(--text3)',
+    letterSpacing: '0.08em', display: 'block', marginBottom: '6px',
+  };
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!name.trim()) { setError('Vehicle name is required'); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const vehicle = await createVehicle({
+        name: name.trim(),
+        make: make.trim() || null,
+        model: model.trim() || null,
+        year: year ? parseInt(year) : null,
+        current_mileage: mileage ? parseInt(mileage) : 0,
+      });
+      onVehicleAdded(vehicle);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', zIndex: 1000 }}>
+      <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '380px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: '700', margin: 0 }}>Add Vehicle</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+        <p style={{ color: '#666', fontSize: '13px', margin: '0 0 20px' }}>Doesn't have to be a daily driver — project cars work too.</p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <label style={labelStyle}>NICKNAME <span style={{ color: 'var(--red)' }}>*</span></label>
+            <input type="text" placeholder={`e.g. "1949 Nash"`} value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>MAKE</label>
+              <input type="text" placeholder="Nash" value={make} onChange={e => setMake(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>MODEL</label>
+              <input type="text" placeholder="Ambassador" value={model} onChange={e => setModel(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>YEAR</label>
+              <input type="number" placeholder="1949" value={year} onChange={e => setYear(e.target.value)} min="1900" max={new Date().getFullYear() + 1} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>CURRENT MILEAGE</label>
+              <input type="number" placeholder="0" value={mileage} onChange={e => setMileage(e.target.value)} min="0" style={inputStyle} />
+            </div>
+          </div>
+          {error && <div style={{ background: '#1a0a0a', border: '1px solid var(--red)', borderRadius: '8px', padding: '10px 14px', color: 'var(--red)', fontSize: '12px' }}>{error}</div>}
+          <button type="submit" disabled={loading || !name.trim()} style={{ marginTop: '8px', padding: '14px', background: loading || !name.trim() ? '#333' : 'var(--accent)', color: loading || !name.trim() ? '#666' : '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '700', cursor: loading || !name.trim() ? 'default' : 'pointer', letterSpacing: '0.05em' }}>
+            {loading ? 'SAVING...' : 'ADD VEHICLE'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AddVehicleScreen({ onVehicleAdded }) {
   const [name, setName] = useState('');
   const [make, setMake] = useState('');
@@ -298,6 +381,7 @@ export default function MainApp({ session }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showSetPassword, setShowSetPassword] = useState(false);
   const [showServiceIntervals, setShowServiceIntervals] = useState(false);
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
   const [vehicleError, setVehicleError] = useState(null);
 
@@ -325,6 +409,12 @@ export default function MainApp({ session }) {
     setSelectedVehicle(vehicle);
   }
 
+  function handleAnotherVehicleAdded(vehicle) {
+    setVehicles(prev => [...prev, vehicle]);
+    setSelectedVehicle(vehicle);
+    setShowAddVehicle(false);
+  }
+
   if (!vehiclesLoaded) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg)', color: 'var(--text3)', fontSize: '13px' }}>
@@ -341,6 +431,9 @@ export default function MainApp({ session }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
 
       {showSetPassword && <SetPasswordModal onClose={() => setShowSetPassword(false)} />}
+      {showAddVehicle && (
+        <AddVehicleModal onClose={() => setShowAddVehicle(false)} onVehicleAdded={handleAnotherVehicleAdded} />
+      )}
       {showServiceIntervals && selectedVehicle && (
         <ServiceIntervalsModal vehicle={selectedVehicle} onClose={() => setShowServiceIntervals(false)} />
       )}
@@ -358,7 +451,13 @@ export default function MainApp({ session }) {
         <div style={{ fontSize: '11px', color: 'var(--text3)' }}>
           {session?.user?.email?.split('@')[0]}
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', rowGap: '4px' }}>
+          <button
+            onClick={() => setShowAddVehicle(true)}
+            style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}
+          >
+            + VEHICLE
+          </button>
           <button
             onClick={() => setShowServiceIntervals(true)}
             style={{ fontSize: '11px', color: 'var(--text3)', letterSpacing: '0.05em', padding: '4px 8px' }}

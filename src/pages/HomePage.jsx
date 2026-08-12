@@ -123,7 +123,8 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
   function handleQuickLogSaved(log) {
     // Prepend the new log to the list and show success
     setLogs(prev => [log, ...prev]);
-    setLastResult({ logType: 'maintenance', parsed: log, needsReview: false });
+    const vehicleName = vehicles.find(v => v.id === log.vehicle_id)?.name;
+    setLastResult({ logType: 'maintenance', parsed: log, needsReview: false, resolvedVehicleName: vehicleName, vehicleReassigned: false });
   }
 
   const uiState = getRecorderState();
@@ -168,8 +169,8 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
         )}
         {lastResult && !lastResult.needsReview && lastResult.parsed && (
           <div style={{ width: '100%', padding: '10px 14px', background: '#0a1a0a', border: '1px solid var(--green)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--green)' }}>
-            ✓ Saved as {lastResult.logType} log{lastResult.parsed.mileage ? ` — ${lastResult.parsed.mileage.toLocaleString()} mi` : ''}
-            {lastResult.vehicleReassigned && ` — logged to ${lastResult.resolvedVehicleName} instead (you said a different vehicle than the one selected)`}
+            ✓ Saved as {lastResult.logType} log{lastResult.parsed.mileage ? ` — ${lastResult.parsed.mileage.toLocaleString()} mi` : ''} — logged to {lastResult.resolvedVehicleName}
+            {lastResult.vehicleReassigned && ` (you said a different vehicle than the one selected)`}
           </div>
         )}
       </div>

@@ -24,13 +24,13 @@ function getSupabase(authHeader) {
 
 // Fields allowed to be updated per log type
 const MAINTENANCE_EDITABLE = [
-  'category', 'description', 'parts_replaced', 'mileage',
+  'vehicle_id', 'category', 'description', 'parts_replaced', 'mileage',
   'shop_name', 'location', 'cost', 'labor_cost', 'parts_cost',
   'next_service_mileage', 'next_service_date', 'notes', 'logged_at',
 ];
 
 const FUEL_EDITABLE = [
-  'gallons', 'price_per_gallon', 'total_cost', 'fuel_grade',
+  'vehicle_id', 'gallons', 'price_per_gallon', 'total_cost', 'fuel_grade',
   'full_tank', 'mileage', 'miles_since_last', 'station_name',
   'location', 'notes', 'logged_at',
 ];

@@ -393,7 +393,9 @@ export default function MainApp({ session }) {
         setVehiclesLoaded(true);
         if (vs.length > 0) {
           const defaultId = getDefaultVehicleId();
-          const defaultVehicle = vs.find(v => v.id === defaultId) || vs[0];
+          const defaultVehicle = vs.find(v => v.id === defaultId)
+            || vs.find(v => v.owner_id === session.user.id)
+            || vs[0];
           setSelectedVehicle(defaultVehicle);
         }
       })

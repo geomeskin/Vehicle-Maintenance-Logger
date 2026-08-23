@@ -28,7 +28,7 @@ const FUEL_FIELDS = [
   { key: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
-export default function EditModal({ log, onClose, onSaved }) {
+export default function EditModal({ log, vehicles, onClose, onSaved }) {
   const fields = log.logType === 'fuel' ? FUEL_FIELDS : MAINTENANCE_FIELDS;
   const [values, setValues] = useState(() => {
     const init = {};
@@ -37,6 +37,7 @@ export default function EditModal({ log, onClose, onSaved }) {
     });
     return init;
   });
+  const [vehicleId, setVehicleId] = useState(log.vehicle_id ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -56,6 +57,9 @@ export default function EditModal({ log, onClose, onSaved }) {
           updates[f.key] = f.type === 'number' ? Number(v) : v;
         }
       });
+      if (vehicleId && vehicleId !== log.vehicle_id) {
+        updates.vehicle_id = vehicleId;
+      }
       const result = await updateLog(log.id, log.logType, updates);
       onSaved(result.updated);
     } catch (err) {
@@ -108,6 +112,30 @@ export default function EditModal({ log, onClose, onSaved }) {
         }}>
           EDIT {log.logType.toUpperCase()} LOG
         </div>
+
+        {vehicles && vehicles.length > 1 && (
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '10px',
+              color: 'var(--text2)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+            }}>
+              Vehicle
+            </label>
+            <select
+              value={vehicleId}
+              onChange={e => setVehicleId(e.target.value)}
+              style={inputStyle}
+            >
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {fields.map(f => (
           <div key={f.key} style={{ marginBottom: '12px' }}>

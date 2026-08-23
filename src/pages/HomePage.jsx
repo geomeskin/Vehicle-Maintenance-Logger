@@ -107,7 +107,11 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
   }
 
   function handleLogEdited(updatedLog) {
-    setLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
+    if (selectedVehicle && updatedLog.vehicle_id !== selectedVehicle.id) {
+      setLogs(prev => prev.filter(l => l.id !== updatedLog.id));
+    } else {
+      setLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
+    }
     setEditingLog(null);
   }
 
@@ -207,6 +211,7 @@ export default function HomePage({ session, vehicles, selectedVehicle, onSelectV
       {editingLog && (
         <EditModal
           log={editingLog}
+          vehicles={vehicles}
           onClose={() => setEditingLog(null)}
           onSaved={handleLogEdited}
         />

@@ -13,25 +13,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Query Supabase and record heartbeat
+      - name: Write Supabase heartbeat row and record heartbeat
         env:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # A plain /health ping only checks the edge network, not the database -
-          # it kept reporting success every run while Supabase paused the project
-          # anyway (found 2026-08-10). Supabase's inactivity timer tracks real
-          # database/API usage, so this queries an actual table through PostgREST
-          # instead. RLS means an anon key gets back an empty array rather than
-          # real rows - that's fine, a 200 here still means Postgres was touched.
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://lilsamzsvywofdpwrlts.supabase.co/rest/v1/vehicles?select=id&limit=1" \
+          # History: a plain /health ping didn't stop the 2026-08-10 pause (edge
+          # network only, never touches Postgres). Its replacement, an anon READ
+          # of `vehicles`, returned 200 [] every run, and the project paused for
+          # inactivity anyway on 2026-09-30, 4 days after a successful ping. So
+          # this now WRITES: it updates pinged_at on the one-row keepalive table
+          # (migration 007). Anon may update only that column on that row.
+          NOW=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          BODY=$(curl -s -w "\n%{http_code}" -X PATCH \
+            "https://lilsamzsvywofdpwrlts.supabase.co/rest/v1/keepalive?id=eq.1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
-          echo "Supabase table query status: $STATUS"
-          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 500 ]; then
-            echo "Unexpected status: $STATUS"
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "{\"pinged_at\": \"$NOW\"}")
+          STATUS=$(echo "$BODY" | tail -n1)
+          RESPONSE=$(echo "$BODY" | sed '$d')
+          echo "Supabase heartbeat write status: $STATUS"
+          echo "Response: $RESPONSE"
+          # The old check accepted anything below 500, so a 401/403 would have
+          # logged as "alive". Require a real 200 with the updated row returned
+          # (an RLS/grant miss returns 200 [] - zero rows updated - or 4xx).
+          if [ "$STATUS" != "200" ] || ! echo "$RESPONSE" | grep -q '"id":1'; then
+            echo "Heartbeat write failed (status $STATUS)."
             exit 1
           fi
           echo "Project is alive."
